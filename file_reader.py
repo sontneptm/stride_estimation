@@ -45,5 +45,5 @@ def read_files():
 
 if __name__ == '__main__':
     subject_list = read_files()
-    subject_list[0].find_stride_split_index()
-    subject_list[0].save_as_one_stride()
+    for subject in subject_list:
+        subject.save_as_one_stride()

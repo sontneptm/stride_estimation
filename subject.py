@@ -1,3 +1,6 @@
+from os import sep
+import numpy as np
+
 class Subject():
     def __init__(self, name) -> None:
         self.name = name
@@ -46,8 +49,22 @@ class Subject():
         print(self.stride_split_index)
 
     def save_as_one_stride(self):
+        file = open("stride_lab_data/processed_data/"+self.name+"/pp_data.csv", 'a')
+
         for info in self.stride_info:
+            total_data = []
             stride_length = info[2]
             data = self.l_plantar_pressure[info[0]:info[1]][:,1]
+
+            total_data.append(stride_length)
+            total_data = np.concatenate((total_data, data), axis=0)
+            total_data = str(total_data)[1:-1].split()
+            total_data = str(list(map(int, total_data)))[1:-1]
+
+            file.write(total_data+'\n')
+
+
+
+
 
             
