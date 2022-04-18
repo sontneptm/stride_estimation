@@ -1,4 +1,3 @@
-from email.header import Header
 from glob import glob
 from subject import Subject
 import pandas as pd
@@ -25,6 +24,10 @@ def read_files():
             
             subject.set_acc(acc_data, acc_type=acc_type)
 
+        stride_path = data_folder_str_list[1]
+
+        print(stride_path)
+
         pp_path = data_folder_str_list[2]
 
         for file in glob(pp_path+'/*'):
@@ -41,5 +44,3 @@ def read_files():
 
 if __name__ == '__main__':
     subject_list = read_files()
-
-    print(subject_list[0].l_wrist_data)
