@@ -1,33 +1,32 @@
+from email.header import Header
 from glob import glob
+from subject import Subject
 import pandas as pd
 import numpy as np
 
 def read_files():
-    files = glob('./stride_data/raw_data/*')
-    for file in files:
-        data = pd.read_csv(file, usecols=(1,2,3,11,12)) # 1=x, 2=y, 3=z, 11=stride_len, 12=stride_num
-        seperate(data)    
+    subject_string_list = glob('./stride_lab_data/raw_data/*')
+    subject_list = []
 
-def seperate(data:np.ndarray):
-    stride_num = data.iloc[:,4].to_numpy()
+    for sub_str in subject_string_list:
+        name = sub_str[sub_str.index("\\")+1:]
+        subject = Subject(name)
+        
+        data_folder_str_list = glob(sub_str+'/*')
 
-    x_list = data.iloc[:,0].to_numpy()
-    y_list = data.iloc[:,1].to_numpy()
-    z_list = data.iloc[:,2].to_numpy()
-    stride_len_list = data.iloc[:,3].to_numpy()
+        acc_path = data_folder_str_list[0]
+        
+        for file in glob(acc_path+'/*'):
+            if "1" in file: acc_type = 'l_wrist'
+            elif "2" in file: acc_type = 'r_wrist'
+            elif "4" in file: acc_type = 'l_ankle'
+            elif "5" in file: acc_type = 'r_ankle'
+            acc_data = pd.read_csv(file, header=None)
+            
+            subject.set_acc(acc_data, acc_type=acc_type)
+            print(acc_data)
 
-    last_stride_num = -1
-    sep_index_list = []
+        pp_path = data_folder_str_list[1]
 
-    for i in range(len(stride_num)):
-        if stride_num[i]<2: continue
-
-        if last_stride_num != stride_num[i]:
-            sep_index_list.append(i)
-            last_stride_num = stride_num[i]
-
-    print(sep_index_list)
-    print(len(sep_index_list))
-    
 if __name__ == '__main__':
-    data = read_files()
+    subject_list = read_files()
