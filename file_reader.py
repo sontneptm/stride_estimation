@@ -25,7 +25,7 @@ def read_files():
             
             subject.set_acc(acc_data, acc_type=acc_type)
 
-        pp_path = data_folder_str_list[1]
+        pp_path = data_folder_str_list[2]
 
         for file in glob(pp_path+'/*'):
             if "C" in file:
