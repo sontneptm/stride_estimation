@@ -32,10 +32,14 @@ def read_files():
                 if "L" in file: pp_type = 'l_pp'
                 elif "R" in file: pp_type = 'r_pp'
 
-                pp_data = pd.read_csv(file, header=None, encoding='ascii')
-                pp_data.drop(index=-1)
+                pp_data = pd.read_csv(file, header=None, encoding='ascii', usecols=(2,5))
+                subject.set_plantar_pressure(pp_data, pp_type)
 
-                print(pp_data)
+        subject_list.append(subject)
+
+    return subject_list
 
 if __name__ == '__main__':
     subject_list = read_files()
+
+    print(subject_list[0].l_wrist_data)

@@ -16,7 +16,7 @@ class Subject():
         elif acc_type == "r_ankle":
             self.r_ankle_data = data
 
-    def set_platar_pressure(self, data, pp_type):
+    def set_plantar_pressure(self, data, pp_type):
         if pp_type== "l_pp":
             self.l_plantar_pressure = data
         elif pp_type== "r_pp":
