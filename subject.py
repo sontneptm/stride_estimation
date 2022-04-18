@@ -8,16 +8,18 @@ class Subject():
         
     def set_acc(self, data, acc_type):
         if acc_type == "l_wrist":
-            print("check1")
             self.l_wrist_data = data
         elif acc_type == "r_wrist":
-            print("check2")
             self.r_wrist_data = data
         elif acc_type == "l_ankle":
-            print("check3")
             self.l_ankle_data = data
         elif acc_type == "r_ankle":
-            print("check4")
             self.r_ankle_data = data
+
+    def set_platar_pressure(self, data, pp_type):
+        if pp_type== "l_pp":
+            self.l_plantar_pressure = data
+        elif pp_type== "r_pp":
+            self.r_plantar_pressure = data
 
 

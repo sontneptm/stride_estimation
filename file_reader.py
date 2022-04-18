@@ -24,9 +24,18 @@ def read_files():
             acc_data = pd.read_csv(file, header=None)
             
             subject.set_acc(acc_data, acc_type=acc_type)
-            print(acc_data)
 
         pp_path = data_folder_str_list[1]
+
+        for file in glob(pp_path+'/*'):
+            if "C" in file:
+                if "L" in file: pp_type = 'l_pp'
+                elif "R" in file: pp_type = 'r_pp'
+
+                pp_data = pd.read_csv(file, header=None, encoding='ascii')
+                pp_data.drop(index=-1)
+
+                print(pp_data)
 
 if __name__ == '__main__':
     subject_list = read_files()
