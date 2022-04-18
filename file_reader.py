@@ -26,7 +26,8 @@ def read_files():
 
         stride_path = data_folder_str_list[1]
 
-        print(stride_path)
+        stride_data = pd.read_csv(stride_path+"/분할인덱스(왼발).csv")
+        subject.set_stride_info(stride_data.to_numpy())
 
         pp_path = data_folder_str_list[2]
 
@@ -44,3 +45,5 @@ def read_files():
 
 if __name__ == '__main__':
     subject_list = read_files()
+    subject_list[0].find_stride_split_index()
+    subject_list[0].save_as_one_stride()

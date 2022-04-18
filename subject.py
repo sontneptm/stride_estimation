@@ -5,6 +5,7 @@ class Subject():
         self.r_wrist_data = None
         self.l_ankle_data = None
         self.r_ankle_data = None
+        self.stride_info = None
         self.l_plantar_pressure = None
         self.r_plantar_pressure = None
         
@@ -24,6 +25,9 @@ class Subject():
         elif pp_type== "r_pp":
             self.r_plantar_pressure = data.to_numpy()
 
+    def set_stride_info(self, data):
+        self.stride_info = data
+
     def find_stride_split_index(self):
         self.stride_split_index=[]
 
@@ -40,3 +44,10 @@ class Subject():
                 self.stride_split_index.append(i)
 
         print(self.stride_split_index)
+
+    def save_as_one_stride(self):
+        for info in self.stride_info:
+            stride_length = info[2]
+            data = self.l_plantar_pressure[info[0]:info[1]][:,1]
+
+            
