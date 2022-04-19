@@ -1,4 +1,4 @@
-from os import sep
+from datetime import datetime, time
 import numpy as np
 
 class Subject():
@@ -14,13 +14,13 @@ class Subject():
         
     def set_acc(self, data, acc_type):
         if acc_type == "l_wrist":
-            self.l_wrist_data = data
+            self.l_wrist_data = data.to_numpy()
         elif acc_type == "r_wrist":
-            self.r_wrist_data = data
+            self.r_wrist_data = data.to_numpy()
         elif acc_type == "l_ankle":
-            self.l_ankle_data = data
+            self.l_ankle_data = data.to_numpy()
         elif acc_type == "r_ankle":
-            self.r_ankle_data = data
+            self.r_ankle_data = data.to_numpy()
 
     def set_plantar_pressure(self, data, pp_type):
         if pp_type== "l_pp":
@@ -37,7 +37,6 @@ class Subject():
         step_flag = False
 
         for i in range(len(self.l_plantar_pressure)):
-            time = self.l_plantar_pressure[i][0]
             pp_value = self.l_plantar_pressure[i][1]
 
             if pp_value < 100 and not step_flag:
@@ -54,8 +53,19 @@ class Subject():
         for info in self.stride_info:
             total_data = []
             stride_length = info[2]
+            start_time = self.l_plantar_pressure[info[0]][0].replace(" ","")
+            end_time = self.l_plantar_pressure[info[1]][0].replace(" ","")
+
+            start_time = datetime.strptime('1'+start_time,'%H:%M:%S.%f')
+            start_time = start_time.replace(hour= (start_time.hour + 2))
+            end_time = datetime.strptime('1'+end_time,'%H:%M:%S.%f')
+            end_time = end_time.replace(hour= (end_time.hour + 2))
+            
+
             data = self.l_plantar_pressure[info[0]:info[1]][:,1]
 
+            self.find_index_with_time(type='l_ankle', s_time=start_time, e_time=end_time)
+    
             while (len(data)<120):
                 data = np.append(data, 0)
 
@@ -65,7 +75,21 @@ class Subject():
             total_data = str(list(map(int, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
 
-            file.write(total_data+'\n')
+            #file.write(total_data+'\n')
+
+    def find_index_with_time(self, type, s_time, e_time):
+        if type == 'l_ankle': target=self.l_ankle_data
+        elif type == 'r_ankle': target=self.r_ankle_data
+
+        for i in range(len(target)):
+            data = target[i]
+            print(data)
+            break
+
+    def process_acc(self):
+        time = self.l_ankle_data[0][0]
+        time = datetime.strptime(time, '%H:%M:%S:%f')
+
 
 
 
