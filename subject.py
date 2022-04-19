@@ -61,34 +61,63 @@ class Subject():
             end_time = datetime.strptime('1'+end_time,'%H:%M:%S.%f')
             end_time = end_time.replace(hour= (end_time.hour + 2))
             
+            l_ankle_start_index, l_ankle_end_index = self.find_index_with_time(type='l_ankle', s_time=start_time, e_time=end_time)
 
-            data = self.l_plantar_pressure[info[0]:info[1]][:,1]
+            pp_data = self.l_plantar_pressure[info[0]:info[1]][:,1]
+            l_ankle_x = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,1]
+            l_ankle_y = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,2]
+            l_ankle_z = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,3]
 
-            self.find_index_with_time(type='l_ankle', s_time=start_time, e_time=end_time)
+            if len(l_ankle_x) < 20 or len(l_ankle_x) > 60:
+                continue
+            else:
+                while (len(l_ankle_x)<60):
+                    l_ankle_x = np.append(l_ankle_x, 0)
+                    l_ankle_y = np.append(l_ankle_y, 0)
+                    l_ankle_z = np.append(l_ankle_z, 0)
     
-            while (len(data)<120):
-                data = np.append(data, 0)
+            while (len(pp_data)<120):
+                pp_data = np.append(pp_data, 0)
 
             total_data.append(stride_length)
-            total_data = np.concatenate((total_data, data), axis=0)
+            total_data = np.concatenate((total_data, pp_data), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_x), axis=0)
+
             total_data = str(total_data)[1:-1].split()
-            total_data = str(list(map(int, total_data)))[1:-1]
+            total_data = str(list(map(np.float32, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
 
-            #file.write(total_data+'\n')
+            file.write(total_data+'\n')
 
     def find_index_with_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data
         elif type == 'r_ankle': target=self.r_ankle_data
 
-        for i in range(len(target)):
-            data = target[i]
-            print(data)
-            break
+        s_min = None
+        s_min_index = None
+        e_min = None
+        e_min_index = None
 
-    def process_acc(self):
-        time = self.l_ankle_data[0][0]
-        time = datetime.strptime(time, '%H:%M:%S:%f')
+        for i in range(len(target)):
+            time = target[i][0]
+            time = datetime.strptime(time, '%H:%M:%S:%f')
+
+            s_sub = np.absolute(s_time-time)
+            e_sub = np.absolute(e_time-time)
+
+            if s_min is None:
+                s_min = s_sub
+                s_min_index = i
+                e_min = e_sub
+                e_min_index = i
+            elif s_sub<s_min:
+                s_min = s_sub
+                s_min_index = i
+            elif e_sub<e_min:
+                e_min = e_sub
+                e_min_index = i
+
+        return s_min_index, e_min_index
 
 
 
