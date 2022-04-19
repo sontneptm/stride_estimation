@@ -61,29 +61,54 @@ class Subject():
             end_time = datetime.strptime('1'+end_time,'%H:%M:%S.%f')
             end_time = end_time.replace(hour= (end_time.hour + 2))
             
-            l_ankle_start_index, l_ankle_end_index = self.find_index_with_time(type='l_ankle', s_time=start_time, e_time=end_time)
+            l_ankle_start_index, l_ankle_end_index = self.find_index_by_time(type='l_ankle', s_time=start_time, e_time=end_time)
+            r_ankle_start_index, r_ankle_end_index = self.find_index_by_time(type='r_ankle', s_time=start_time, e_time=end_time)
+            r_pp_start_index, r_pp_end_index = self.find_index_by_time(type='r_pp', s_time=start_time, e_time=end_time)
 
-            pp_data = self.l_plantar_pressure[info[0]:info[1]][:,1]
+            l_pp_data = self.l_plantar_pressure[info[0]:info[1]][:,1]
+            r_pp_data = self.r_plantar_pressure[r_pp_start_index:r_pp_end_index][:,1]
+
             l_ankle_x = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,1]
             l_ankle_y = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,2]
             l_ankle_z = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,3]
 
+            r_ankle_x = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,1]
+            r_ankle_y = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,2]
+            r_ankle_z = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,3]
+
             if len(l_ankle_x) < 20 or len(l_ankle_x) > 60:
+                continue
+            if len(r_ankle_x) < 20 or len(r_ankle_x) > 60:
                 continue
             else:
                 while (len(l_ankle_x)<60):
                     l_ankle_x = np.append(l_ankle_x, 0)
                     l_ankle_y = np.append(l_ankle_y, 0)
                     l_ankle_z = np.append(l_ankle_z, 0)
+
+                while (len(r_ankle_x)<60):
+                    r_ankle_x = np.append(r_ankle_x, 0)
+                    r_ankle_y = np.append(r_ankle_y, 0)
+                    r_ankle_z = np.append(r_ankle_z, 0)
     
-            while (len(pp_data)<120):
-                pp_data = np.append(pp_data, 0)
+            while (len(l_pp_data)<120):
+                l_pp_data = np.append(l_pp_data, 0)
+
+            while (len(r_pp_data)<120):
+                r_pp_data = np.append(r_pp_data, 0)
 
             total_data.append(stride_length)
-            total_data = np.concatenate((total_data, pp_data), axis=0)
+
+            total_data = np.concatenate((total_data, l_pp_data), axis=0)
+            total_data = np.concatenate((total_data, r_pp_data), axis=0)
+
             total_data = np.concatenate((total_data, l_ankle_x), axis=0)
             total_data = np.concatenate((total_data, l_ankle_y), axis=0)
             total_data = np.concatenate((total_data, l_ankle_z), axis=0)
+
+            total_data = np.concatenate((total_data, r_ankle_x), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_y), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_z), axis=0)
 
             total_data = str(total_data)[1:-1].split()
             total_data = str(list(map(np.float32, total_data)))[1:-1]
@@ -91,9 +116,10 @@ class Subject():
 
             file.write(total_data+'\n')
 
-    def find_index_with_time(self, type, s_time, e_time):
+    def find_index_by_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data
         elif type == 'r_ankle': target=self.r_ankle_data
+        elif type == 'r_pp': target=self.r_plantar_pressure
 
         s_min = None
         s_min_index = None
@@ -102,7 +128,16 @@ class Subject():
 
         for i in range(len(target)):
             time = target[i][0]
-            time = datetime.strptime(time, '%H:%M:%S:%f')
+            if type=='r_pp':
+                time = time.replace(" ", "")
+                time = "1"+time
+                try:
+                    time = datetime.strptime(time, '%H:%M:%S.%f')
+                except:
+                    time = datetime.strptime(time, '%H:%M:%S')
+                time = time.replace(hour=(time.hour+2))
+            else:
+                time = datetime.strptime(time, '%H:%M:%S:%f')
 
             s_sub = np.absolute(s_time-time)
             e_sub = np.absolute(e_time-time)
@@ -120,7 +155,6 @@ class Subject():
                 e_min_index = i
 
         return s_min_index, e_min_index
-
 
 
 

@@ -1,13 +1,23 @@
-import imp
-from sklearn.metrics import r2_score
+import tensorflow as tf
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.layers import GRU, Dense, Dropout, LSTM, Conv1D, MaxPooling1D, Flatten, BatchNormalization as BN
+from tensorflow.keras.layers import GRU, Dense, Dropout, LSTM
+from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 import pandas as pd
 from glob import glob
+
+def setup_gpu():
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            tf.config.experimental.set_memory_growth(gpus[0], True)
+        except RuntimeError as e:
+            # 프로그램 시작시에 메모리 증가가 설정되어야만 합니다
+            print(e)
 
 def load_data(mode="loso"):
     train_x = []
@@ -47,66 +57,87 @@ def load_data(mode="loso"):
                 x_data.append(d[1:])
 
         scaler = MinMaxScaler((0,1))
-        for d in x_data[:,:120]:
-            print(len(d))
-        x_pp_data = scaler.fit_transform(x_data[:][:120])
 
-        scaler = MinMaxScaler((0,1))
-        x_acc_data = scaler.fit_transform(x_data[:][120:])
+        x_data = np.array(x_data)
 
-        return
-
-        x_data = np.concatenate((x_pp_data, x_acc_data))
+        x_data = scaler.fit_transform(x_data)
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
     return np.array(train_x), np.array(train_y), np.array(test_x), np.array(test_y)
 
-def build_model():
+def build_conv1_model():
     model = Sequential()
-    model.add(Conv1D(filters=256, kernel_size=8, input_shape=[300,1]))
+    model.add(Conv1D(filters=512, kernel_size=4, input_shape=[600,1]))
     model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=256, kernel_size=6))
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=256, kernel_size=4))
+    model.add(Conv1D(filters=512, kernel_size=4))
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=256, kernel_size=4))
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=256, kernel_size=4))
     model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=256, kernel_size=2))
+    model.add(Conv1D(filters=256, kernel_size=4))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Conv1D(filters=256, kernel_size=4))
     model.add(MaxPooling1D(pool_size=2))
     model.add(Flatten())
-    # model.add(LSTM(units=128, return_sequences=True,  input_shape=[300,1]))
-    # model.add(LSTM(units=128, return_sequences=True, ))
-    # model.add(LSTM(units=128, return_sequences=True, ))
-    # model.add(LSTM(units=128, return_sequences=False, ))
+    model.add(Dense(1024, activation='swish'))
     model.add(Dropout(0.2))
     model.add(Dense(1024, activation='swish'))
+    model.add(Dropout(0.2))
     model.add(Dense(1024, activation='swish'))
+    model.add(Dropout(0.2))
     model.add(Dense(1024, activation='swish'))
+    model.add(Dropout(0.2))
+    model.add(Dense(1024, activation='swish'))
+    model.add(Dropout(0.2))
     model.add(Dense(1024, activation='swish'))
     model.add(Dense(1, activation=None))
-    model.compile(optimizer=Adam(learning_rate=LR), loss='mse')
+    model.compile(optimizer=Adam(learning_rate=0.1), loss='mse')
+    model.summary()
+
+def build_conv2_model(learning_rate):
+    model = Sequential()
+    model.add(Conv2D(filters=256, kernel_size=(4,2), padding='same', input_shape=[60,10,1]))
+    model.add(MaxPooling2D(2,2))
+    model.add(Conv2D(filters=256, kernel_size=(4,2), padding='same'))
+    model.add(MaxPooling2D(2,2))
+    model.add(Conv2D(filters=256, kernel_size=(2,2), padding='same'))
+    model.add(MaxPooling2D(2,2))
+    model.add(Flatten())
+    model.add(Dense(1024, activation='swish'))
+    model.add(Dropout(0.2))
+    model.add(Dense(1024, activation='swish'))
+    model.add(Dropout(0.2))
+    model.add(Dense(1024, activation='swish'))
+    model.add(Dropout(0.2))
+    model.add(Dense(1024, activation='swish'))
+    model.add(Dense(1, activation='swish'))
+    model.compile(optimizer=Adam(learning_rate=learning_rate), loss='mse')
     model.summary()
 
     return model
 
 if __name__ == "__main__":
+    setup_gpu()
+
     train_x, train_y, test_x, test_y = load_data(mode="shuffle")
   
-    train_x = train_x.reshape(-1,300,1)
-    test_x = test_x.reshape(-1,300,1)
-
-    EPOCH = 1000
+    INPUT_SIZE = 600
+    EPOCH = 2000
     BATCH_SIZE = 16
-    LR = 1.46e-3
-    
-    model = build_model()
+    LR = 1.46e-4
+
+    train_x = train_x.reshape(-1,60,10,1)
+    test_x = test_x.reshape(-1,60,10,1)
+
+    #model = build_conv1_model()
+    model = build_conv2_model(LR)
     model.fit(train_x, train_y, batch_size=16, epochs=EPOCH, shuffle=True, validation_split=(0.1))
 
     predict_y = model.predict(test_x)
 
+    print(mean_absolute_error(y_true=test_y, y_pred=predict_y))
     print(r2_score(y_true=test_y, y_pred=predict_y))
 
     for i in range(len(test_y)):
