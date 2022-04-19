@@ -50,13 +50,15 @@ def load_data(mode="loso"):
 
         x_data = scaler.fit_transform(x_data)
 
+        print(len(x_data))
+
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
     return np.array(train_x), np.array(train_y), np.array(test_x), np.array(test_y)
 
 def build_model():
     model = Sequential()
-    model.add(Conv1D(filters=256, kernel_size=4, input_shape=[120,1]))
+    model.add(Conv1D(filters=256, kernel_size=4, input_shape=[300,1]))
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=256, kernel_size=4))
     model.add(MaxPooling1D(pool_size=2))
@@ -67,7 +69,7 @@ def build_model():
     model.add(Conv1D(filters=256, kernel_size=2))
     model.add(MaxPooling1D(pool_size=2))
     model.add(Flatten())
-    # model.add(LSTM(units=128, return_sequences=True,  input_shape=[120,1]))
+    # model.add(LSTM(units=128, return_sequences=True,  input_shape=[300,1]))
     # model.add(LSTM(units=128, return_sequences=True, ))
     # model.add(LSTM(units=128, return_sequences=True, ))
     # model.add(LSTM(units=128, return_sequences=False, ))
@@ -85,8 +87,8 @@ def build_model():
 if __name__ == "__main__":
     train_x, train_y, test_x, test_y = load_data(mode="shuffle")
   
-    train_x = train_x.reshape(-1,120,1)
-    test_x = test_x.reshape(-1,120,1)
+    train_x = train_x.reshape(-1,300,1)
+    test_x = test_x.reshape(-1,300,1)
 
     EPOCH = 500
     BATCH_SIZE = 16
