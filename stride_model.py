@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.layers import GRU, Dense, Dropout, LSTM, Conv1D, MaxPooling1D, Flatten
+from tensorflow.keras.layers import GRU, Dense, Dropout, LSTM, Conv1D, MaxPooling1D, Flatten, BatchNormalization as BN
 import numpy as np
 import pandas as pd
 from glob import glob
@@ -56,20 +56,27 @@ def load_data(mode="loso"):
 
 def build_model():
     model = Sequential()
-    # model.add(Conv1D(filters=128, kernel_size=4, input_shape=[120,1]))
-    # model.add(MaxPooling1D(pool_size=2))
-    # model.add(Conv1D(filters=128, kernel_size=4))
-    # model.add(MaxPooling1D(pool_size=2))
-    # model.add(Flatten())
-    model.add(LSTM(units=128, return_sequences=True, input_shape=[120,1]))
-    model.add(LSTM(units=128, return_sequences=True))
-    model.add(LSTM(units=128, return_sequences=True))
-    model.add(LSTM(units=128, return_sequences=False))
+    model.add(Conv1D(filters=256, kernel_size=4, input_shape=[120,1]))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Conv1D(filters=256, kernel_size=4))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Conv1D(filters=256, kernel_size=4))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Conv1D(filters=256, kernel_size=4))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Conv1D(filters=256, kernel_size=2))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Flatten())
+    # model.add(LSTM(units=128, return_sequences=True,  input_shape=[120,1]))
+    # model.add(LSTM(units=128, return_sequences=True, ))
+    # model.add(LSTM(units=128, return_sequences=True, ))
+    # model.add(LSTM(units=128, return_sequences=False, ))
     model.add(Dropout(0.2))
     model.add(Dense(1024, activation='swish'))
     model.add(Dense(1024, activation='swish'))
     model.add(Dense(1024, activation='swish'))
-    model.add(Dense(1, activation='swish'))
+    model.add(Dense(1024, activation='swish'))
+    model.add(Dense(1, activation=None))
     model.compile(optimizer=Adam(learning_rate=LR), loss='mse')
     model.summary()
 
@@ -81,9 +88,9 @@ if __name__ == "__main__":
     train_x = train_x.reshape(-1,120,1)
     test_x = test_x.reshape(-1,120,1)
 
-    EPOCH = 1000
-    BATCH_SIZE = 8
-    LR = 1.46e-4
+    EPOCH = 500
+    BATCH_SIZE = 16
+    LR = 1.46e-3
     
     model = build_model()
     model.fit(train_x, train_y, batch_size=16, epochs=EPOCH, shuffle=True, validation_split=(0.1))
