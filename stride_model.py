@@ -47,10 +47,16 @@ def load_data(mode="loso"):
                 x_data.append(d[1:])
 
         scaler = MinMaxScaler((0,1))
+        for d in x_data[:,:120]:
+            print(len(d))
+        x_pp_data = scaler.fit_transform(x_data[:][:120])
 
-        x_data = scaler.fit_transform(x_data)
+        scaler = MinMaxScaler((0,1))
+        x_acc_data = scaler.fit_transform(x_data[:][120:])
 
-        print(len(x_data))
+        return
+
+        x_data = np.concatenate((x_pp_data, x_acc_data))
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
@@ -58,7 +64,9 @@ def load_data(mode="loso"):
 
 def build_model():
     model = Sequential()
-    model.add(Conv1D(filters=256, kernel_size=4, input_shape=[300,1]))
+    model.add(Conv1D(filters=256, kernel_size=8, input_shape=[300,1]))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Conv1D(filters=256, kernel_size=6))
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=256, kernel_size=4))
     model.add(MaxPooling1D(pool_size=2))
@@ -90,7 +98,7 @@ if __name__ == "__main__":
     train_x = train_x.reshape(-1,300,1)
     test_x = test_x.reshape(-1,300,1)
 
-    EPOCH = 500
+    EPOCH = 1000
     BATCH_SIZE = 16
     LR = 1.46e-3
     
