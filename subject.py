@@ -56,10 +56,14 @@ class Subject():
             stride_length = info[2]
             data = self.l_plantar_pressure[info[0]:info[1]][:,1]
 
+            while (len(data)<120):
+                data = np.append(data, 0)
+
             total_data.append(stride_length)
             total_data = np.concatenate((total_data, data), axis=0)
             total_data = str(total_data)[1:-1].split()
             total_data = str(list(map(int, total_data)))[1:-1]
+            total_data = total_data.replace(" ", "")
 
             file.write(total_data+'\n')
 
