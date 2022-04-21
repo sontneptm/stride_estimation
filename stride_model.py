@@ -62,19 +62,13 @@ def load_data(mode="loso"):
 
         x_data = scaler.fit_transform(x_data)
 
-        train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
+        train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.1, random_state=42)
 
     return np.array(train_x), np.array(train_y), np.array(test_x), np.array(test_y)
 
-def build_conv1_model():
+def build_conv1_model(LR, INPUT_SIZE):
     model = Sequential()
-    model.add(Conv1D(filters=512, kernel_size=4, input_shape=[600,1]))
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=512, kernel_size=4))
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=256, kernel_size=4))
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=256, kernel_size=4))
+    model.add(Conv1D(filters=256, kernel_size=4, input_shape=[INPUT_SIZE,1]))
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=256, kernel_size=4))
     model.add(MaxPooling1D(pool_size=2))
@@ -88,13 +82,11 @@ def build_conv1_model():
     model.add(Dense(1024, activation='swish'))
     model.add(Dropout(0.2))
     model.add(Dense(1024, activation='swish'))
-    model.add(Dropout(0.2))
-    model.add(Dense(1024, activation='swish'))
-    model.add(Dropout(0.2))
-    model.add(Dense(1024, activation='swish'))
     model.add(Dense(1, activation=None))
-    model.compile(optimizer=Adam(learning_rate=0.1), loss='mse')
+    model.compile(optimizer=Adam(learning_rate=LR), loss='mse')
     model.summary()
+
+    return model
 
 def build_conv2_model(learning_rate):
     model = Sequential()
@@ -123,22 +115,24 @@ if __name__ == "__main__":
 
     train_x, train_y, test_x, test_y = load_data(mode="shuffle")
   
-    INPUT_SIZE = 600
+    INPUT_SIZE = 360
     EPOCH = 2000
     BATCH_SIZE = 16
     LR = 1.46e-4
 
-    train_x = train_x.reshape(-1,600,1)
-    test_x = test_x.reshape(-1,600,1)
+    train_x = train_x.reshape(-1,INPUT_SIZE,1)
+    test_x = test_x.reshape(-1,INPUT_SIZE,1)
 
-    model = build_conv1_model()
+    model = build_conv1_model(LR, INPUT_SIZE)
     #model = build_conv2_model(LR)
     model.fit(train_x, train_y, batch_size=16, epochs=EPOCH, shuffle=True, validation_split=(0.1))
 
     predict_y = model.predict(test_x)
 
-    print(mean_absolute_error(y_true=test_y, y_pred=predict_y))
-    print(r2_score(y_true=test_y, y_pred=predict_y))
+    print("MAE: ",mean_absolute_error(y_true=test_y, y_pred=predict_y))
+    print("ME: ", np.mean(np.subtract(test_y, predict_y)))
+    print("std: ", np.std(np.subtract(test_y, predict_y)))
+    print("r2 score: ", r2_score(y_true=test_y, y_pred=predict_y))
 
     for i in range(len(test_y)):
         print("real: " + str(test_y[i]) + " predicted: " + str(predict_y[i]))
