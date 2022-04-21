@@ -128,11 +128,11 @@ if __name__ == "__main__":
     BATCH_SIZE = 16
     LR = 1.46e-4
 
-    train_x = train_x.reshape(-1,60,10,1)
-    test_x = test_x.reshape(-1,60,10,1)
+    train_x = train_x.reshape(-1,600,1)
+    test_x = test_x.reshape(-1,600,1)
 
-    #model = build_conv1_model()
-    model = build_conv2_model(LR)
+    model = build_conv1_model()
+    #model = build_conv2_model(LR)
     model.fit(train_x, train_y, batch_size=16, epochs=EPOCH, shuffle=True, validation_split=(0.1))
 
     predict_y = model.predict(test_x)
