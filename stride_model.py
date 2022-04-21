@@ -1,7 +1,7 @@
 import tensorflow as tf
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, Normalizer
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import GRU, Dense, Dropout, LSTM
@@ -56,13 +56,7 @@ def load_data(mode="loso"):
                 y_data.append(d[0])
                 x_data.append(d[1:])
 
-        scaler = MinMaxScaler((0,1))
-
-        x_data = np.array(x_data)
-
-        x_data = scaler.fit_transform(x_data)
-
-        train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.1, random_state=42)
+        train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
     return np.array(train_x), np.array(train_y), np.array(test_x), np.array(test_y)
 
@@ -74,7 +68,17 @@ def build_conv1_model(LR, INPUT_SIZE):
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=256, kernel_size=4))
     model.add(MaxPooling1D(pool_size=2))
+    model.add(Conv1D(filters=256, kernel_size=4))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Conv1D(filters=256, kernel_size=4))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Conv1D(filters=256, kernel_size=4))
+    model.add(MaxPooling1D(pool_size=2))
     model.add(Flatten())
+    model.add(Dense(1024, activation='swish'))
+    model.add(Dropout(0.2))
+    model.add(Dense(1024, activation='swish'))
+    model.add(Dropout(0.2))
     model.add(Dense(1024, activation='swish'))
     model.add(Dropout(0.2))
     model.add(Dense(1024, activation='swish'))
@@ -114,6 +118,12 @@ if __name__ == "__main__":
     setup_gpu()
 
     train_x, train_y, test_x, test_y = load_data(mode="shuffle")
+
+    normalizer = Normalizer()
+
+    train_x = normalizer.fit_transform(train_x)
+    test_x = normalizer.transform(test_x)
+
   
     INPUT_SIZE = 360
     EPOCH = 2000

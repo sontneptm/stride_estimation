@@ -47,6 +47,9 @@ class Subject():
 
         print(self.stride_split_index)
 
+    def extract_gait_features(self):
+        pass
+
     def save_as_one_stride(self):
         file = open("stride_lab_data/processed_data/"+self.name+"/pp_data.csv", 'a')
 
