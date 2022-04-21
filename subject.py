@@ -47,8 +47,27 @@ class Subject():
 
         print(self.stride_split_index)
 
-    def extract_gait_features(self):
-        pass
+    def change_str_to_time(self, time_str:str):
+        rtn_time = time_str.replace(" ", "")
+        try:
+            rtn_time = datetime.strptime("1"+rtn_time, '%H:%M:%S.%f')
+        except:
+            rtn_time = datetime.strptime("1"+rtn_time, '%H:%M:%S')
+        rtn_time = rtn_time.replace(hour=(rtn_time.hour+2))
+
+        return rtn_time
+
+    def extract_gait_features(self, pp_data):
+        pp_len = len(pp_data)
+        time = pp_data[:,:1]
+        pp_data = pp_data[:, 1:]
+
+        initial_contact_t = self.change_str_to_time(time[0][0])
+        last_t = self.change_str_to_time(time[pp_len-1][0])
+
+        stride_time = np.absolute(initial_contact_t - last_t)
+
+        print(stride_time)
 
     def save_as_one_stride(self):
         file = open("stride_lab_data/processed_data/"+self.name+"/pp_data.csv", 'a')
@@ -56,17 +75,14 @@ class Subject():
         for info in self.stride_info:
             total_data = []
             stride_length = info[2]
-            start_time = self.l_plantar_pressure[info[0]][0].replace(" ","")
-            end_time = self.l_plantar_pressure[info[1]][0].replace(" ","")
-
-            start_time = datetime.strptime('1'+start_time,'%H:%M:%S.%f')
-            start_time = start_time.replace(hour= (start_time.hour + 2))
-            end_time = datetime.strptime('1'+end_time,'%H:%M:%S.%f')
-            end_time = end_time.replace(hour= (end_time.hour + 2))
+            start_time = self.change_str_to_time(self.l_plantar_pressure[info[0]][0])
+            end_time = self.change_str_to_time(self.l_plantar_pressure[info[1]][0])
             
             l_ankle_start_index, l_ankle_end_index = self.find_index_by_time(type='l_ankle', s_time=start_time, e_time=end_time)
             r_ankle_start_index, r_ankle_end_index = self.find_index_by_time(type='r_ankle', s_time=start_time, e_time=end_time)
             r_pp_start_index, r_pp_end_index = self.find_index_by_time(type='r_pp', s_time=start_time, e_time=end_time)
+
+            gait_features = self.extract_gait_features(self.l_plantar_pressure[info[0]:info[1]])
 
             l_pp_data = self.l_plantar_pressure[info[0]:info[1]][:,1]
             r_pp_data = self.r_plantar_pressure[r_pp_start_index:r_pp_end_index][:,1]
@@ -133,7 +149,7 @@ class Subject():
             total_data = str(list(map(np.float32, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
 
-            file.write(total_data+'\n')
+            #file.write(total_data+'\n')
 
     def find_index_by_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data
@@ -174,9 +190,3 @@ class Subject():
                 e_min_index = i
 
         return s_min_index, e_min_index
-
-
-
-
-
-            

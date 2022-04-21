@@ -1,7 +1,7 @@
 import tensorflow as tf
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler, Normalizer
+from sklearn.preprocessing import MinMaxScaler, Normalizer, RobustScaler, StandardScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import GRU, Dense, Dropout, LSTM
@@ -119,10 +119,10 @@ if __name__ == "__main__":
 
     train_x, train_y, test_x, test_y = load_data(mode="shuffle")
 
-    normalizer = Normalizer()
+    scaler = StandardScaler()
 
-    train_x = normalizer.fit_transform(train_x)
-    test_x = normalizer.transform(test_x)
+    train_x = scaler.fit_transform(train_x)
+    test_x = scaler.transform(test_x)
 
   
     INPUT_SIZE = 360

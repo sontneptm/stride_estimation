@@ -47,3 +47,4 @@ if __name__ == '__main__':
     subject_list = read_files()
     for subject in subject_list:
         subject.save_as_one_stride()
+        break
