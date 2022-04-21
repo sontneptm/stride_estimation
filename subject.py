@@ -1,4 +1,5 @@
-from datetime import datetime, time
+from datetime import datetime
+from scipy.signal import find_peaks
 import numpy as np
 
 class Subject():
@@ -47,6 +48,13 @@ class Subject():
 
         print(self.stride_split_index)
 
+    def find_peaks_index(self, pp_data) -> list:
+        peaks = find_peaks(pp_data, height=2000, distance=20)
+        return peaks[0]
+    
+    def find_swing_index(self, pp_data):
+        pass
+
     def change_str_to_time(self, time_str:str):
         rtn_time = time_str.replace(" ", "")
         try:
@@ -59,15 +67,20 @@ class Subject():
 
     def extract_gait_features(self, pp_data):
         pp_len = len(pp_data)
-        time = pp_data[:,:1]
-        pp_data = pp_data[:, 1:]
+        time = pp_data[:,:1].squeeze()
+        pp_data = pp_data[:, 1:].squeeze()
 
-        initial_contact_t = self.change_str_to_time(time[0][0])
-        last_t = self.change_str_to_time(time[pp_len-1][0])
+        peaks_index = self.find_peaks_index(pp_data)
+        hs_index = peaks_index[0]
+        to_index = peaks_index[1]
+
+        print(hs_index)
+        print(to_index)
+
+        initial_contact_t = self.change_str_to_time(time[0])
+        last_t = self.change_str_to_time(time[pp_len-1])
 
         stride_time = np.absolute(initial_contact_t - last_t)
-
-        print(stride_time)
 
     def save_as_one_stride(self):
         file = open("stride_lab_data/processed_data/"+self.name+"/pp_data.csv", 'a')
