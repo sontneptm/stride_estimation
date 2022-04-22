@@ -124,11 +124,12 @@ if __name__ == "__main__":
     train_x = scaler.fit_transform(train_x)
     test_x = scaler.transform(test_x)
 
-  
-    INPUT_SIZE = 360
+    INPUT_SIZE = len(train_x[0])
     EPOCH = 2000
     BATCH_SIZE = 16
     LR = 1.46e-4
+
+    print(INPUT_SIZE)
 
     train_x = train_x.reshape(-1,INPUT_SIZE,1)
     test_x = test_x.reshape(-1,INPUT_SIZE,1)

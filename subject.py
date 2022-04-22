@@ -32,6 +32,9 @@ class Subject():
     def set_stride_info(self, data):
         self.stride_info = data
 
+    def convert_timedelata_to_milisec(self, delta):
+        return (delta.microseconds/1000) + (delta.seconds*1000)
+
     def find_stride_split_index(self):
         self.stride_split_index=[]
 
@@ -50,10 +53,14 @@ class Subject():
 
     def find_peaks_index(self, pp_data) -> list:
         peaks = find_peaks(pp_data, height=2000, distance=20)
-        return peaks[0]
-    
-    def find_swing_index(self, pp_data):
-        pass
+        zero_point = -1
+        for i in range(len(pp_data)):
+            data = pp_data[i]
+            if data <= 90:
+                zero_point = i
+                break
+
+        return [peaks[0][0], peaks[0][1], zero_point]
 
     def change_str_to_time(self, time_str:str):
         rtn_time = time_str.replace(" ", "")
@@ -65,22 +72,62 @@ class Subject():
 
         return rtn_time
 
-    def extract_gait_features(self, pp_data):
-        pp_len = len(pp_data)
-        time = pp_data[:,:1].squeeze()
-        pp_data = pp_data[:, 1:].squeeze()
+    def find_r_step_index(self, pp_data):
+        swing_start = -1
+        swing_end = -1
+        for i in range(len(pp_data)):
+            data = pp_data[i]
+            
+            if swing_start == -1 and data < 50:
+                swing_start = i+1
+            if swing_start != -1 and data > 100:
+                swing_end = i-1
+                break
 
-        peaks_index = self.find_peaks_index(pp_data)
+        print(*pp_data, sep='\t')
+        print(swing_start, swing_end)
+
+   
+    def extract_gait_features(self, l_pp_data, r_pp_data):
+        gait_features = []
+
+        l_pp_len = len(l_pp_data)
+        l_time = l_pp_data[:,:1].squeeze()
+        l_pp_data = l_pp_data[:, 1:].squeeze()
+
+        r_time = r_pp_data[:,:1].squeeze()
+        r_pp_data = r_pp_data[:, 1:].squeeze()
+
+        self.find_r_step_index(r_pp_data)
+
+        peaks_index = self.find_peaks_index(l_pp_data)
         hs_index = peaks_index[0]
         to_index = peaks_index[1]
+        swing_index = peaks_index[2]
 
-        print(hs_index)
-        print(to_index)
+        initial_contact_t = self.change_str_to_time(l_time[0])
+        heel_strike_t = self.change_str_to_time(l_time[hs_index])
+        toe_off_t = self.change_str_to_time(l_time[to_index])
+        swing_t = self.change_str_to_time(l_time[swing_index])
+        last_t = self.change_str_to_time(l_time[l_pp_len-1])
 
-        initial_contact_t = self.change_str_to_time(time[0])
-        last_t = self.change_str_to_time(time[pp_len-1])
+        stride_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - last_t))
+        stance_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - swing_t))
+        swing_time = self.convert_timedelata_to_milisec(np.absolute(swing_t - last_t))
+        stance_swing_ratio = stance_time / swing_time
+        hs_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - heel_strike_t))
+        full_contact_time = self.convert_timedelata_to_milisec(np.absolute(heel_strike_t - toe_off_t))
+        to_time = self.convert_timedelata_to_milisec(np.absolute(toe_off_t - swing_t))
 
-        stride_time = np.absolute(initial_contact_t - last_t)
+        gait_features.append(stride_time)
+        gait_features.append(stance_time)
+        gait_features.append(swing_time)
+        gait_features.append(stance_swing_ratio)
+        gait_features.append(hs_time)
+        gait_features.append(full_contact_time)
+        gait_features.append(to_time)
+
+        return gait_features
 
     def save_as_one_stride(self):
         file = open("stride_lab_data/processed_data/"+self.name+"/pp_data.csv", 'a')
@@ -95,7 +142,7 @@ class Subject():
             r_ankle_start_index, r_ankle_end_index = self.find_index_by_time(type='r_ankle', s_time=start_time, e_time=end_time)
             r_pp_start_index, r_pp_end_index = self.find_index_by_time(type='r_pp', s_time=start_time, e_time=end_time)
 
-            gait_features = self.extract_gait_features(self.l_plantar_pressure[info[0]:info[1]])
+            gait_features = self.extract_gait_features(self.l_plantar_pressure[info[0]:info[1]], self.r_plantar_pressure[r_pp_start_index:r_pp_end_index])
 
             l_pp_data = self.l_plantar_pressure[info[0]:info[1]][:,1]
             r_pp_data = self.r_plantar_pressure[r_pp_start_index:r_pp_end_index][:,1]
@@ -151,12 +198,18 @@ class Subject():
 
             total_data.append(stride_length)
 
+            total_data = np.concatenate((total_data, gait_features), axis=0)
+
             total_data = np.concatenate((total_data, l_pp_data), axis=0)
             total_data = np.concatenate((total_data, r_pp_data), axis=0)
 
-            total_data = np.concatenate((total_data, l_svm), axis=0)
-            total_data = np.concatenate((total_data, r_svm), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_x), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_y), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_z), axis=0)
 
+            total_data = np.concatenate((total_data, r_ankle_x), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_y), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_z), axis=0)
 
             total_data = str(total_data)[1:-1].split()
             total_data = str(list(map(np.float32, total_data)))[1:-1]
