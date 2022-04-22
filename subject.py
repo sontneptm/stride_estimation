@@ -112,21 +112,30 @@ class Subject():
         swing_t = self.change_str_to_time(l_time[swing_index])
         last_t = self.change_str_to_time(l_time[l_pp_len-1])
 
-
         stride_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - last_t))
-        step_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - r_swing_end_t))
+        r_step_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - r_swing_end_t))
+        l_step_time = self.convert_timedelata_to_milisec(np.absolute(r_swing_end_t - last_t))
         stance_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - swing_t))
         swing_time = self.convert_timedelata_to_milisec(np.absolute(swing_t - last_t))
         stance_swing_ratio = stance_time / swing_time
-        
+
+        first_double_support_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - r_swing_start_t))
+        single_support_time = self.convert_timedelata_to_milisec(np.absolute(r_swing_start_t - r_swing_end_t))
+        second_double_support_time = self.convert_timedelata_to_milisec(np.absolute(r_swing_end_t - swing_t))
         hs_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - heel_strike_t))
         full_contact_time = self.convert_timedelata_to_milisec(np.absolute(heel_strike_t - toe_off_t))
         to_time = self.convert_timedelata_to_milisec(np.absolute(toe_off_t - swing_t))
 
         gait_features.append(stride_time)
+        gait_features.append(r_step_time)
+        gait_features.append(l_step_time)
         gait_features.append(stance_time)
         gait_features.append(swing_time)
         gait_features.append(stance_swing_ratio)
+
+        gait_features.append(first_double_support_time)
+        gait_features.append(single_support_time)
+        gait_features.append(second_double_support_time)
         gait_features.append(hs_time)
         gait_features.append(full_contact_time)
         gait_features.append(to_time)
@@ -207,19 +216,19 @@ class Subject():
             total_data = np.concatenate((total_data, l_pp_data), axis=0)
             total_data = np.concatenate((total_data, r_pp_data), axis=0)
 
-            total_data = np.concatenate((total_data, l_ankle_x), axis=0)
-            total_data = np.concatenate((total_data, l_ankle_y), axis=0)
-            total_data = np.concatenate((total_data, l_ankle_z), axis=0)
+            # total_data = np.concatenate((total_data, l_ankle_x), axis=0)
+            # total_data = np.concatenate((total_data, l_ankle_y), axis=0)
+            # total_data = np.concatenate((total_data, l_ankle_z), axis=0)
 
-            total_data = np.concatenate((total_data, r_ankle_x), axis=0)
-            total_data = np.concatenate((total_data, r_ankle_y), axis=0)
-            total_data = np.concatenate((total_data, r_ankle_z), axis=0)
+            # total_data = np.concatenate((total_data, r_ankle_x), axis=0)
+            # total_data = np.concatenate((total_data, r_ankle_y), axis=0)
+            # total_data = np.concatenate((total_data, r_ankle_z), axis=0)
 
             total_data = str(total_data)[1:-1].split()
             total_data = str(list(map(np.float32, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
 
-            #file.write(total_data+'\n')
+            file.write(total_data+'\n')
 
     def find_index_by_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data
