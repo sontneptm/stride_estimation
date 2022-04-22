@@ -72,7 +72,7 @@ class Subject():
 
         return rtn_time
 
-    def find_r_step_index(self, pp_data):
+    def find_r_swing_index(self, pp_data):
         swing_start = -1
         swing_end = -1
         for i in range(len(pp_data)):
@@ -83,11 +83,9 @@ class Subject():
             if swing_start != -1 and data > 100:
                 swing_end = i-1
                 break
+        
+        return swing_start, swing_end
 
-        print(*pp_data, sep='\t')
-        print(swing_start, swing_end)
-
-   
     def extract_gait_features(self, l_pp_data, r_pp_data):
         gait_features = []
 
@@ -98,12 +96,15 @@ class Subject():
         r_time = r_pp_data[:,:1].squeeze()
         r_pp_data = r_pp_data[:, 1:].squeeze()
 
-        self.find_r_step_index(r_pp_data)
+        r_swing_start_index, r_swing_end_index = self.find_r_swing_index(r_pp_data)
 
         peaks_index = self.find_peaks_index(l_pp_data)
         hs_index = peaks_index[0]
         to_index = peaks_index[1]
         swing_index = peaks_index[2]
+
+        r_swing_start_t = self.change_str_to_time(r_time[r_swing_start_index])
+        r_swing_end_t = self.change_str_to_time(r_time[r_swing_end_index])
 
         initial_contact_t = self.change_str_to_time(l_time[0])
         heel_strike_t = self.change_str_to_time(l_time[hs_index])
@@ -111,10 +112,13 @@ class Subject():
         swing_t = self.change_str_to_time(l_time[swing_index])
         last_t = self.change_str_to_time(l_time[l_pp_len-1])
 
+
         stride_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - last_t))
+        step_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - r_swing_end_t))
         stance_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - swing_t))
         swing_time = self.convert_timedelata_to_milisec(np.absolute(swing_t - last_t))
         stance_swing_ratio = stance_time / swing_time
+        
         hs_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - heel_strike_t))
         full_contact_time = self.convert_timedelata_to_milisec(np.absolute(heel_strike_t - toe_off_t))
         to_time = self.convert_timedelata_to_milisec(np.absolute(toe_off_t - swing_t))
