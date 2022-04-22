@@ -153,6 +153,8 @@ class Subject():
             
             l_ankle_start_index, l_ankle_end_index = self.find_index_by_time(type='l_ankle', s_time=start_time, e_time=end_time)
             r_ankle_start_index, r_ankle_end_index = self.find_index_by_time(type='r_ankle', s_time=start_time, e_time=end_time)
+            l_ankle_end_index = l_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
+            r_ankle_end_index = r_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
             r_pp_start_index, r_pp_end_index = self.find_index_by_time(type='r_pp', s_time=start_time, e_time=end_time)
 
             gait_features = self.extract_gait_features(self.l_plantar_pressure[info[0]:info[1]], self.r_plantar_pressure[r_pp_start_index:r_pp_end_index])
@@ -191,13 +193,13 @@ class Subject():
             if len(r_ankle_x) < 20 or len(r_ankle_x) > 60:
                 continue
             else:
-                while (len(l_ankle_x)<60):
+                while (len(l_ankle_x)<50):
                     l_ankle_x = np.append(l_ankle_x, 0)
                     l_ankle_y = np.append(l_ankle_y, 0)
                     l_ankle_z = np.append(l_ankle_z, 0)
                     l_svm = np.append(l_svm, 0)
 
-                while (len(r_ankle_x)<60):
+                while (len(r_ankle_x)<50):
                     r_ankle_x = np.append(r_ankle_x, 0)
                     r_ankle_y = np.append(r_ankle_y, 0)
                     r_ankle_z = np.append(r_ankle_z, 0)
@@ -216,13 +218,13 @@ class Subject():
             total_data = np.concatenate((total_data, l_pp_data), axis=0)
             total_data = np.concatenate((total_data, r_pp_data), axis=0)
 
-            # total_data = np.concatenate((total_data, l_ankle_x), axis=0)
-            # total_data = np.concatenate((total_data, l_ankle_y), axis=0)
-            # total_data = np.concatenate((total_data, l_ankle_z), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_x), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_y), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_z), axis=0)
 
-            # total_data = np.concatenate((total_data, r_ankle_x), axis=0)
-            # total_data = np.concatenate((total_data, r_ankle_y), axis=0)
-            # total_data = np.concatenate((total_data, r_ankle_z), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_x), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_y), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_z), axis=0)
 
             total_data = str(total_data)[1:-1].split()
             total_data = str(list(map(np.float32, total_data)))[1:-1]
