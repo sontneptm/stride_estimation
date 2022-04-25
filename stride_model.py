@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, Normalizer, RobustScaler, StandardScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.layers import GRU, Dense, Dropout, LSTM
+from tensorflow.keras.layers import GRU, Dense, Dropout, LSTM, BatchNormalization as BN
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, Conv2D, MaxPooling2D
 import numpy as np
 import pandas as pd
@@ -63,34 +63,42 @@ def load_data(mode="loso"):
 def build_conv1_model(LR, INPUT_SIZE):
     model = Sequential()
     model.add(Conv1D(filters=128, kernel_size=4, padding='same', input_shape=[INPUT_SIZE,1]))
+    model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
+    model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
+    model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
+    model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=128, kernel_size=3, padding='same'))
+    model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=128, kernel_size=3, padding='same'))
+    model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=128, kernel_size=2, padding='same'))
+    model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Conv1D(filters=128, kernel_size=2, padding='same'))
+    model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Flatten())
-    model.add(Dropout(0.2))
     model.add(Dense(1024, activation='swish'))
-    model.add(Dropout(0.2))
+    model.add(BN())
     model.add(Dense(1024, activation='swish'))
-    model.add(Dropout(0.2))
+    model.add(BN())
     model.add(Dense(1024, activation='swish'))
-    model.add(Dropout(0.2))
+    model.add(BN())
     model.add(Dense(1024, activation='swish'))
-    model.add(Dropout(0.2))
+    model.add(BN())
     model.add(Dense(1024, activation='swish'))
-    model.add(Dropout(0.2))
+    model.add(BN())
     model.add(Dense(1024, activation='swish'))
+    model.add(BN())
     model.add(Dense(1, activation=None))
     model.compile(optimizer=Adam(learning_rate=LR), loss='mse')
     model.summary()
@@ -131,7 +139,7 @@ if __name__ == "__main__":
 
     INPUT_SIZE = len(train_x[0])
     EPOCH = 2000
-    BATCH_SIZE = 16
+    BATCH_SIZE = 128
     LR = 1.46e-4
 
     print(INPUT_SIZE)
