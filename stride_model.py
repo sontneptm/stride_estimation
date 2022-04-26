@@ -65,34 +65,16 @@ def build_conv1_model(LR, INPUT_SIZE):
     model.add(Conv1D(filters=128, kernel_size=4, padding='same', input_shape=[INPUT_SIZE,1]))
     model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
-    model.add(BN())
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
-    model.add(BN())
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
-    model.add(BN())
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=128, kernel_size=3, padding='same'))
-    model.add(BN())
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=128, kernel_size=3, padding='same'))
-    model.add(BN())
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=128, kernel_size=2, padding='same'))
-    model.add(BN())
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=128, kernel_size=2, padding='same'))
-    model.add(BN())
-    model.add(MaxPooling1D(pool_size=2))
+    # model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
+    # model.add(BN())
+    # model.add(MaxPooling1D(pool_size=2))
+    # model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
+    # model.add(BN())
+    # model.add(MaxPooling1D(pool_size=2))
+    # model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
+    # model.add(BN())
+    # model.add(MaxPooling1D(pool_size=2))
     model.add(Flatten())
-    model.add(Dense(1024, activation='swish'))
-    model.add(BN())
-    model.add(Dense(1024, activation='swish'))
-    model.add(BN())
-    model.add(Dense(1024, activation='swish'))
-    model.add(BN())
     model.add(Dense(1024, activation='swish'))
     model.add(BN())
     model.add(Dense(1024, activation='swish'))
@@ -101,6 +83,7 @@ def build_conv1_model(LR, INPUT_SIZE):
     model.add(BN())
     model.add(Dense(1, activation=None))
     model.compile(optimizer=Adam(learning_rate=LR), loss='mse')
+
     model.summary()
 
     return model
@@ -129,7 +112,6 @@ def build_conv2_model(learning_rate):
 
 if __name__ == "__main__":
     setup_gpu()
-
     train_x, train_y, test_x, test_y = load_data(mode="shuffle")
 
     scaler = StandardScaler()
@@ -149,7 +131,7 @@ if __name__ == "__main__":
 
     model = build_conv1_model(LR, INPUT_SIZE)
     #model = build_conv2_model(LR)
-    model.fit(train_x, train_y, batch_size=16, epochs=EPOCH, shuffle=True)
+    model.fit(train_x, train_y, batch_size=16, epochs=EPOCH, shuffle=True, validation_split=0.1)
 
     predict_y = model.predict(test_x)
 
