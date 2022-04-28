@@ -25,9 +25,11 @@ def read_files():
             subject.set_acc(acc_data, acc_type=acc_type)
 
         stride_path = data_folder_str_list[1]
-
-        stride_data = pd.read_csv(stride_path+"/분할인덱스(왼발).csv")
-        subject.set_stride_info(stride_data.to_numpy())
+        try:
+            stride_data = pd.read_csv(stride_path+"/분할인덱스(왼발).csv")
+            subject.set_stride_info(stride_data.to_numpy())
+        except:
+            print("no split index found")
 
         pp_path = data_folder_str_list[2]
 
@@ -46,4 +48,7 @@ def read_files():
 if __name__ == '__main__':
     subject_list = read_files()
     for subject in subject_list:
-        subject.save_as_one_stride()
+        if subject.name in ['민세동','원혜연','이경준','이서영','장승완'] :
+            print(subject.name)
+            subject.find_stride_split_index()
+            print()
