@@ -48,7 +48,5 @@ def read_files():
 if __name__ == '__main__':
     subject_list = read_files()
     for subject in subject_list:
-        if subject.name in ['민세동','원혜연','이경준','이서영','장승완'] :
-            print(subject.name)
-            subject.find_stride_split_index()
-            print()
+        if subject.name == "장승완":
+            subject.save_as_one_stride()

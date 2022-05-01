@@ -1,6 +1,7 @@
 from datetime import datetime
 from scipy.signal import find_peaks
 import numpy as np
+import os
 
 class Subject():
     def __init__(self, name) -> None:
@@ -143,11 +144,14 @@ class Subject():
         return gait_features
 
     def save_as_one_stride(self):
+        os.makedirs("stride_lab_data/processed_data/"+self.name, exist_ok=True)
+
         file = open("stride_lab_data/processed_data/"+self.name+"/pp_data.csv", 'a')
 
         for info in self.stride_info:
             total_data = []
             stride_length = info[2]
+
             start_time = self.change_str_to_time(self.l_plantar_pressure[info[0]][0])
             end_time = self.change_str_to_time(self.l_plantar_pressure[info[1]][0])
             
@@ -155,6 +159,7 @@ class Subject():
             r_ankle_start_index, r_ankle_end_index = self.find_index_by_time(type='r_ankle', s_time=start_time, e_time=end_time)
             l_ankle_end_index = l_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
             r_ankle_end_index = r_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
+
             r_pp_start_index, r_pp_end_index = self.find_index_by_time(type='r_pp', s_time=start_time, e_time=end_time)
 
             gait_features = self.extract_gait_features(self.l_plantar_pressure[info[0]:info[1]], self.r_plantar_pressure[r_pp_start_index:r_pp_end_index])
@@ -230,7 +235,7 @@ class Subject():
             total_data = str(list(map(np.float32, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
 
-            # file.write(total_data+'\n')
+            #file.write(total_data+'\n')
 
     def find_index_by_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data

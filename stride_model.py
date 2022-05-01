@@ -30,6 +30,7 @@ def load_data(mode="loso"):
     data_path_list = glob('./stride_lab_data/processed_data/*/*')
 
     for path in data_path_list:
+        print(path)
         data = pd.read_csv(path).to_numpy()
         data_list.append(data)
 
