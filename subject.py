@@ -79,9 +79,9 @@ class Subject():
         for i in range(len(pp_data)):
             data = pp_data[i]
             
-            if swing_start == -1 and data < 50:
+            if swing_start == -1 and data < 200:
                 swing_start = i+1
-            if swing_start != -1 and data > 100:
+            if swing_start != -1 and data > 200:
                 swing_end = i-1
                 break
         
@@ -210,10 +210,10 @@ class Subject():
                     r_ankle_z = np.append(r_ankle_z, 0)
                     r_svm = np.append(r_svm, 0)
     
-            while (len(l_pp_data)<120):
+            while (len(l_pp_data)<125):
                 l_pp_data = np.append(l_pp_data, 0)
 
-            while (len(r_pp_data)<120):
+            while (len(r_pp_data)<125):
                 r_pp_data = np.append(r_pp_data, 0)
 
             total_data.append(stride_length)
@@ -223,19 +223,19 @@ class Subject():
             total_data = np.concatenate((total_data, l_pp_data), axis=0)
             total_data = np.concatenate((total_data, r_pp_data), axis=0)
 
-            # total_data = np.concatenate((total_data, l_ankle_x), axis=0)
-            # total_data = np.concatenate((total_data, l_ankle_y), axis=0)
-            # total_data = np.concatenate((total_data, l_ankle_z), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_x), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_y), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_z), axis=0)
 
-            # total_data = np.concatenate((total_data, r_ankle_x), axis=0)
-            # total_data = np.concatenate((total_data, r_ankle_y), axis=0)
-            # total_data = np.concatenate((total_data, r_ankle_z), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_x), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_y), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_z), axis=0)
 
             total_data = str(total_data)[1:-1].split()
             total_data = str(list(map(np.float32, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
 
-            #file.write(total_data+'\n')
+            file.write(total_data+'\n')
 
     def find_index_by_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data

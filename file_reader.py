@@ -48,5 +48,4 @@ def read_files():
 if __name__ == '__main__':
     subject_list = read_files()
     for subject in subject_list:
-        if subject.name == "장승완":
-            subject.save_as_one_stride()
+        subject.save_as_one_stride()

@@ -30,6 +30,13 @@ def load_data(mode="loso"):
     data_path_list = glob('./stride_lab_data/processed_data/*/*')
 
     for path in data_path_list:
+        if (
+        "민세동" in path or
+        "원혜연" in path or 
+        "장승완" in path or 
+        "이서영" in path ):
+        #"이경준" in path
+            continue
         print(path)
         data = pd.read_csv(path).to_numpy()
         data_list.append(data)
@@ -63,19 +70,21 @@ def load_data(mode="loso"):
 
 def build_conv1_model(LR, INPUT_SIZE):
     model = Sequential()
-    model.add(Conv1D(filters=128, kernel_size=4, padding='same', input_shape=[INPUT_SIZE,1]))
+    model.add(Conv1D(filters=256, kernel_size=4, padding='same', input_shape=[INPUT_SIZE,1]))
     model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
+    model.add(Conv1D(filters=256, kernel_size=4, padding='same'))
     model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
+    model.add(Conv1D(filters=256, kernel_size=4, padding='same'))
     model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
-    model.add(Conv1D(filters=128, kernel_size=4, padding='same'))
+    model.add(Conv1D(filters=256, kernel_size=4, padding='same'))
     model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Flatten())
+    model.add(Dense(1024, activation='swish'))
+    model.add(BN())
     model.add(Dense(1024, activation='swish'))
     model.add(BN())
     model.add(Dense(1024, activation='swish'))
@@ -122,7 +131,7 @@ if __name__ == "__main__":
 
     INPUT_SIZE = len(train_x[0])
     EPOCH = 2000
-    BATCH_SIZE = 128
+    BATCH_SIZE = 16
     LR = 1.46e-4
 
     print(INPUT_SIZE)
@@ -132,7 +141,7 @@ if __name__ == "__main__":
 
     model = build_conv1_model(LR, INPUT_SIZE)
     #model = build_conv2_model(LR)
-    model.fit(train_x, train_y, batch_size=16, epochs=EPOCH, shuffle=True, validation_split=0.1)
+    model.fit(train_x, train_y, batch_size=BATCH_SIZE, epochs=EPOCH, shuffle=True, validation_split=0.1)
 
     predict_y = model.predict(test_x)
 
