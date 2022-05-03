@@ -1,4 +1,5 @@
 from datetime import datetime
+from scipy.integrate import dblquad
 from scipy.signal import find_peaks
 import numpy as np
 import os
@@ -169,6 +170,10 @@ class Subject():
 
             l_ankle_x = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,1]
             l_ankle_y = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,2]
+
+            db_y = np.cumsum(l_ankle_y)
+            db_y = np.cumsum(db_y)
+
             l_ankle_z = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,3]
 
             r_ankle_x = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,1]
@@ -201,6 +206,7 @@ class Subject():
                 while (len(l_ankle_x)<50):
                     l_ankle_x = np.append(l_ankle_x, 0)
                     l_ankle_y = np.append(l_ankle_y, 0)
+                    db_y = np.append(db_y, db_y[len(db_y)-1])
                     l_ankle_z = np.append(l_ankle_z, 0)
                     l_svm = np.append(l_svm, 0)
 
