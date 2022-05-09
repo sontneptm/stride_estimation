@@ -1,5 +1,4 @@
 from datetime import datetime
-from scipy.integrate import dblquad
 from scipy.signal import find_peaks
 import numpy as np
 import os
@@ -144,6 +143,11 @@ class Subject():
 
         return gait_features
 
+    def moving_average(self, data:np.ndarray, window_size) -> np.ndarray:
+        return np.convolve(data, np.ones((window_size,)) / window_size, mode='same') 
+
+
+
     def save_as_one_stride(self):
         os.makedirs("stride_lab_data/processed_data/"+self.name, exist_ok=True)
 
@@ -170,11 +174,15 @@ class Subject():
 
             l_ankle_x = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,1]
             l_ankle_y = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,2]
-
-            db_y = np.cumsum(l_ankle_y)
-            db_y = np.cumsum(db_y)
-
             l_ankle_z = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,3]
+
+            l_ankle_x = self.moving_average(l_ankle_x, 5)
+            l_ankle_y = self.moving_average(l_ankle_y, 5)
+            l_ankle_z = self.moving_average(l_ankle_z, 5)
+
+            db_x = np.cumsum(np.cumsum(l_ankle_x))
+            db_y = np.cumsum(np.cumsum(l_ankle_y))
+            db_z = np.cumsum(np.cumsum(l_ankle_z))
 
             r_ankle_x = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,1]
             r_ankle_y = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,2]
@@ -206,8 +214,10 @@ class Subject():
                 while (len(l_ankle_x)<50):
                     l_ankle_x = np.append(l_ankle_x, 0)
                     l_ankle_y = np.append(l_ankle_y, 0)
-                    db_y = np.append(db_y, db_y[len(db_y)-1])
                     l_ankle_z = np.append(l_ankle_z, 0)
+                    db_x = np.append(db_x, db_x[len(db_x)-1])
+                    db_y = np.append(db_y, db_y[len(db_y)-1])
+                    db_z = np.append(db_z, db_z[len(db_z)-1])
                     l_svm = np.append(l_svm, 0)
 
                 while (len(r_ankle_x)<50):
@@ -228,6 +238,10 @@ class Subject():
 
             total_data = np.concatenate((total_data, l_pp_data), axis=0)
             total_data = np.concatenate((total_data, r_pp_data), axis=0)
+            
+            # total_data = np.concatenate((total_data, db_x), axis=0)
+            total_data = np.concatenate((total_data, db_y), axis=0)
+            # total_data = np.concatenate((total_data, db_z), axis=0)
 
             total_data = np.concatenate((total_data, l_ankle_x), axis=0)
             total_data = np.concatenate((total_data, l_ankle_y), axis=0)
