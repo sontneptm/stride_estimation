@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from glob import glob
 
 def setup_gpu():
+    print("==== setting up GPU ====")
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if gpus:
         try:
@@ -14,7 +15,17 @@ def setup_gpu():
         except RuntimeError as e:
             print(e)
 
+def scale_data(train_data, test_data):
+    print("==== scaling DATA ====")
+    scaler = StandardScaler()
+
+    train_data = scaler.fit_transform(train_data)
+    test_data = scaler.transform(test_data)
+
+    return train_data, test_data
+
 def load_data():
+    print("==== loading DATA ====")
     data_path_list = glob('./stride_lab_data/processed_data/*/*')
 
     data_list=None
@@ -31,17 +42,16 @@ def load_data():
 
     train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
+    train_x, test_x = scale_data(train_x, test_x)
+
     train_dataset = tf.data.Dataset.from_tensor_slices((train_x, train_y))
     test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y))
     
     return train_dataset, test_dataset
 
-def build_cute_model():
+def build_cnn_model():
+    print("==== building DATA ====")
     model = Sequential()
-
-hyper_params={
-    'epoch': 1000
-}
 
 if __name__ == '__main__':
     setup_gpu()
