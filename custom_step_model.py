@@ -25,7 +25,7 @@ def setup_gpu():
 
 class StepModel():
     def __init__(self) -> None:
-        self.epochs = 4000
+        self.epochs = 2000
         self.learning_rate = 1.46e-4
         self.batch_size = 32
         self.input_size = None
@@ -76,6 +76,7 @@ class StepModel():
 
         train_x, val_x, test_x = self.scale_data(train_x, val_x, test_x)
         self.input_size = len(train_x[0])
+
         train_x = train_x.reshape(-1, self.input_size, 1)
         val_x = val_x.reshape(-1, self.input_size, 1)
         test_x = test_x.reshape(-1, self.input_size, 1)
@@ -99,27 +100,19 @@ class StepModel():
     def build_cnn_model(self):
         print("==== building MODEL ====")
         model = Sequential()
-        model.add(Conv1D(filters=256, kernel_size=4, padding='same', input_shape=[self.input_size,1]))
-        model.add(BN())
+        model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish', input_shape=[self.input_size,1]))
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=256, kernel_size=4, padding='same'))
-        model.add(BN())
+        model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish'))
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=256, kernel_size=4, padding='same'))
-        model.add(BN())
+        model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish'))
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=256, kernel_size=4, padding='same'))
-        model.add(BN())
+        model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish'))
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
         model.add(Dense(4096, activation='swish'))
-        model.add(BN())
         model.add(Dense(4096, activation='swish'))
-        model.add(BN())
         model.add(Dense(4096, activation='swish'))
-        model.add(BN())
         model.add(Dense(4096, activation='swish'))
-        model.add(BN())
         model.add(Dense(1, activation=None))
         model.summary()
 
@@ -136,9 +129,10 @@ class StepModel():
         self.val_acc_metric = MSE_metrics()
     
     def train(self):
+        start_time = time.time()
         for epoch in range(self.epochs):
             print("epoch " , epoch, end=" -> ")
-            start_time = time.time()
+            epoch_time = time.time()
             
             # TRAIN LOOP with BATCH
             for step, (x_batch_train, y_batch_train) in enumerate(self.train_dataset):
@@ -146,9 +140,9 @@ class StepModel():
                     logits = self.l_step_model(x_batch_train, training=True)
                     l_step_loss_value = self.l_step_loss(y_batch_train, logits)
 
-                grads = tape.gradient(l_step_loss_value, self.l_step_model.trainable_weights)
+                grads = tape.gradient(l_step_loss_value, self.l_step_model.trainable_variables)
 
-                self.l_step_optimizer.apply_gradients(zip(grads, self.l_step_model.trainable_weights))
+                self.l_step_optimizer.apply_gradients(zip(grads, self.l_step_model.trainable_variables))
 
                 train_acc = self.train_acc_metric.update_state(y_batch_train, logits)
                 
@@ -167,7 +161,9 @@ class StepModel():
             self.val_acc_metric.reset_states()
             print("Validation acc: %.4f" % (float(val_acc),), end='\t')
 
-            print("Time taken: %.2fs" % (time.time() - start_time))
+            print("Time taken: %.2fs" % (time.time() - epoch_time))
+
+        print("Whole Time taken: %.2fs" % (time.time() - start_time))
 
     @tf.function
     def train_with_compile(self):
