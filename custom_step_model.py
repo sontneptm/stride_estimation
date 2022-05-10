@@ -4,11 +4,15 @@ import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, BatchNormalization as BN
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.losses import MeanSquaredError as MSE
+from tensorflow.keras.utils import plot_model
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from glob import glob
 
 input_size = None
+batch_size = 32
 
 def setup_gpu():
     print("==== setting up GPU ====")
@@ -54,9 +58,12 @@ def load_data():
     print("test y shape: ", test_y.shape)
 
     global input_size
+    global batch_size
+
     input_size = len(train_x[0])
 
     train_dataset = tf.data.Dataset.from_tensor_slices((train_x, train_y))
+    train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
     test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y))
     
     return train_dataset, test_dataset
@@ -91,8 +98,13 @@ def build_cnn_model(input_size):
 
     return model
 
+def setup_optimizers(learning_rate):
+    l_step_optimizer = Adam(learning_rate=learning_rate)
+    l_step_loss = MSE()
+
 if __name__ == '__main__':
     setup_gpu()
     train_dataset, test_dataset = load_data()
     l_step_model = build_cnn_model(input_size)
+    setup_optimizers(1.46e-4)
 
