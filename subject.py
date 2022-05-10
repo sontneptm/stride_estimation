@@ -146,8 +146,6 @@ class Subject():
     def moving_average(self, data:np.ndarray, window_size) -> np.ndarray:
         return np.convolve(data, np.ones((window_size,)) / window_size, mode='same') 
 
-
-
     def save_as_one_stride(self):
         os.makedirs("stride_lab_data/processed_data/"+self.name, exist_ok=True)
 
@@ -156,6 +154,9 @@ class Subject():
         for info in self.stride_info:
             total_data = []
             stride_length = info[2]
+
+            r_step_length = info[3]
+            l_step_length = info[4]
 
             start_time = self.change_str_to_time(self.l_plantar_pressure[info[0]][0])
             end_time = self.change_str_to_time(self.l_plantar_pressure[info[1]][0])
@@ -233,6 +234,8 @@ class Subject():
                 r_pp_data = np.append(r_pp_data, 0)
 
             total_data.append(stride_length)
+            total_data.append(r_step_length)
+            total_data.append(l_step_length)
 
             total_data = np.concatenate((total_data, gait_features), axis=0)
 

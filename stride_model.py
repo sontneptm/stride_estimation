@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.keras.utils import plot_model
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, Normalizer, RobustScaler, StandardScaler
@@ -42,27 +43,27 @@ def load_data(mode="loso"):
         data_list.append(data)
 
     if mode == "loso":
-        div = 6
+        div = 10
 
         for i in range(len(data_list)):
             data = data_list[i]
 
             if i<div:
                 for d in data:
-                    train_y.append(d[0])
-                    train_x.append(d[1:])
+                    train_y.append(d[2:3])
+                    train_x.append(d[3:])
             elif i>=div:
                 for d in data:
-                    test_y.append(d[0])
-                    test_x.append(d[1:])
+                    test_y.append(d[2:3])
+                    test_x.append(d[3:])
 
     elif mode=="shuffle":
         for i in range(len(data_list)):
             data = data_list[i]
 
             for d in data:
-                y_data.append(d[0])
-                x_data.append(d[1:])
+                y_data.append(d[:3])
+                x_data.append(d[3:])
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
@@ -83,39 +84,17 @@ def build_conv1_model(LR, INPUT_SIZE):
     model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Flatten())
-    model.add(Dense(1024, activation='swish'))
+    model.add(Dense(4096, activation='swish'))
     model.add(BN())
-    model.add(Dense(1024, activation='swish'))
+    model.add(Dense(4096, activation='swish'))
     model.add(BN())
-    model.add(Dense(1024, activation='swish'))
+    model.add(Dense(4096, activation='swish'))
     model.add(BN())
-    model.add(Dense(1024, activation='swish'))
+    model.add(Dense(4096, activation='swish'))
     model.add(BN())
     model.add(Dense(1, activation=None))
     model.compile(optimizer=Adam(learning_rate=LR), loss='mse')
 
-    model.summary()
-
-    return model
-
-def build_conv2_model(learning_rate):
-    model = Sequential()
-    model.add(Conv2D(filters=256, kernel_size=(4,2), padding='same', input_shape=[60,10,1]))
-    model.add(MaxPooling2D(2,2))
-    model.add(Conv2D(filters=256, kernel_size=(4,2), padding='same'))
-    model.add(MaxPooling2D(2,2))
-    model.add(Conv2D(filters=256, kernel_size=(2,2), padding='same'))
-    model.add(MaxPooling2D(2,2))
-    model.add(Flatten())
-    model.add(Dense(1024, activation='swish'))
-    model.add(Dropout(0.2))
-    model.add(Dense(1024, activation='swish'))
-    model.add(Dropout(0.2))
-    model.add(Dense(1024, activation='swish'))
-    model.add(Dropout(0.2))
-    model.add(Dense(1024, activation='swish'))
-    model.add(Dense(1, activation='swish'))
-    model.compile(optimizer=Adam(learning_rate=learning_rate), loss='mse')
     model.summary()
 
     return model
@@ -131,28 +110,46 @@ if __name__ == "__main__":
 
     INPUT_SIZE = len(train_x[0])
     EPOCH = 2000
-    BATCH_SIZE = 16
+    BATCH_SIZE = 32
     LR = 1.46e-4
 
-    print(INPUT_SIZE)
+    train_yr = train_y[:,1]
+    train_yl = train_y[:,2]
+    test_yr = test_y[:,1]
+    test_yl = test_y[:,2]
 
     train_x = train_x.reshape(-1,INPUT_SIZE,1)
     test_x = test_x.reshape(-1,INPUT_SIZE,1)
 
-    model = build_conv1_model(LR, INPUT_SIZE)
-    #model = build_conv2_model(LR)
-    model.fit(train_x, train_y, batch_size=BATCH_SIZE, epochs=EPOCH, shuffle=True, validation_split=0.1)
+    r_step_model = build_conv1_model(LR, INPUT_SIZE)
+    l_step_model = build_conv1_model(LR, INPUT_SIZE)
 
-    predict_y = model.predict(test_x)
+    plot_model(r_step_model, to_file='model.png', show_shapes=True, show_layer_names=True)
 
-    print("MAE: ",mean_absolute_error(y_true=test_y, y_pred=predict_y))
-    print("ME: ", np.mean(np.subtract(test_y, predict_y)))
-    print("std: ", np.std(np.subtract(test_y, predict_y)))
-    print("relative error: ", np.mean(np.divide(np.absolute(np.subtract(test_y, predict_y)), test_y))*100)
-    print("r2 score: ", r2_score(y_true=test_y, y_pred=predict_y))
+    r_step_model.fit(train_x, train_yr, batch_size=BATCH_SIZE, epochs=EPOCH, shuffle=True, validation_split=0.1)
+    l_step_model.fit(train_x, train_yr, batch_size=BATCH_SIZE, epochs=EPOCH, shuffle=True, validation_split=0.1)
 
-    for i in range(len(test_y)):
-        print("real: " + str(test_y[i]) + " predicted: " + str(predict_y[i]))
+    predict_yr = r_step_model.predict(test_x)
+    predict_yl = l_step_model.predict(test_x)
 
+    print("======= report ==========")
 
+    print("r_MAE: ",mean_absolute_error(y_true=test_yr, y_pred=predict_yr))
+    print("l_MAE: ",mean_absolute_error(y_true=test_yl, y_pred=predict_yl))
+    print("=========================")
 
+    print("r_ME: ", np.mean(np.subtract(test_yr, predict_yr)))
+    print("r_std: ", np.std(np.subtract(test_yr, predict_yr)))
+    print("=========================")
+
+    print("l_ME: ", np.mean(np.subtract(test_yl, predict_yl)))
+    print("l_std: ", np.std(np.subtract(test_yl, predict_yl)))
+    print("=========================")
+
+    print("r_relative error: ", np.mean(np.divide(np.absolute(np.subtract(test_yr, predict_yr)), test_yr))*100)
+    print("l_relative error: ", np.mean(np.divide(np.absolute(np.subtract(test_yl, predict_yl)), test_yl))*100)
+    print("=========================")
+    
+    print("r_r2 score: ", r2_score(y_true=test_yr, y_pred=predict_yr))
+    print("l_r2 score: ", r2_score(y_true=test_yl, y_pred=predict_yl))
+    print("=========================")
