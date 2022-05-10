@@ -23,14 +23,15 @@ def setup_gpu():
         except RuntimeError as e:
             print(e)
 
-def scale_data(train_data, test_data):
+def scale_data(train_data, val_data, test_data):
     print("==== scaling DATA ====")
     scaler = StandardScaler()
 
     train_data = scaler.fit_transform(train_data)
+    val_data = scaler.transform(val_data)
     test_data = scaler.transform(test_data)
 
-    return train_data, test_data
+    return train_data, val_data, test_data
 
 def load_data():
     print("==== loading DATA ====")
@@ -49,24 +50,28 @@ def load_data():
     y_data = data_list[:,2:3]
 
     train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
+    train_x, val_x, train_y, val_y =  train_test_split(train_x, train_y, test_size=0.2, random_state=42)
 
-    train_x, test_x = scale_data(train_x, test_x)
+    train_x, val_x, test_x = scale_data(train_x, val_x, test_x)
 
     print("train x shape: ", train_x.shape)
     print("train y shape: ", train_y.shape)
+    print("val x shape: ", val_x.shape)
+    print("val y shape: ", val_y.shape)
     print("test x shape: ", test_x.shape)
     print("test y shape: ", test_y.shape)
 
     global input_size
-    global batch_size
 
     input_size = len(train_x[0])
 
     train_dataset = tf.data.Dataset.from_tensor_slices((train_x, train_y))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
+    val_dataset = tf.data.Dataset.from_tensor_slices((val_x, val_y))
+    val_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
     test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y))
     
-    return train_dataset, test_dataset
+    return train_dataset, val_dataset, test_dataset
 
 def build_cnn_model(input_size):
     print("==== building DATA ====")
@@ -104,7 +109,8 @@ def setup_optimizers(learning_rate):
 
 if __name__ == '__main__':
     setup_gpu()
-    train_dataset, test_dataset = load_data()
+    train_dataset, val_dataset, test_dataset = load_data()
+
     l_step_model = build_cnn_model(input_size)
     setup_optimizers(1.46e-4)
 
