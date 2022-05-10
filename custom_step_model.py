@@ -6,8 +6,9 @@ from tensorflow.keras.layers import Dense, BatchNormalization as BN
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import MeanSquaredError as MSE
+from tensorflow.keras.metrics import MeanSquaredError as MSE_metrics 
 from tensorflow.keras.utils import plot_model
-from tensorflow.keras.metrics import MeanSquaredError as MSE_metrics
+from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from glob import glob
@@ -24,8 +25,8 @@ def setup_gpu():
 
 class StepModel():
     def __init__(self) -> None:
-        self.epochs = 100
-        self.learning_rate = 1.46e-3
+        self.epochs = 4000
+        self.learning_rate = 1.46e-4
         self.batch_size = 32
         self.input_size = None
 
@@ -79,6 +80,9 @@ class StepModel():
         val_x = val_x.reshape(-1, self.input_size, 1)
         test_x = test_x.reshape(-1, self.input_size, 1)
 
+        self.test_x = test_x
+        self.test_y = test_y
+
         print("train x shape: ", train_x.shape)
         print("train y shape: ", train_y.shape)
         print("val x shape: ", val_x.shape)
@@ -86,11 +90,10 @@ class StepModel():
         print("test x shape: ", test_x.shape)
         print("test y shape: ", test_y.shape)
 
-
         self.train_dataset = tf.data.Dataset.from_tensor_slices((train_x, train_y))
         self.train_dataset = self.train_dataset.shuffle(buffer_size=1024).batch(self.batch_size)
         self.val_dataset = tf.data.Dataset.from_tensor_slices((val_x, val_y))
-        self.val_dataset = self.val_dataset.shuffle(buffer_size=1024).batch(self.batch_size)
+        self.val_dataset = self.val_dataset.batch(self.batch_size)
         self.test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y))
 
     def build_cnn_model(self):
@@ -131,10 +134,10 @@ class StepModel():
         print("==== setting up METRICS ====")
         self.train_acc_metric = MSE_metrics()
         self.val_acc_metric = MSE_metrics()
-
+    
     def train(self):
         for epoch in range(self.epochs):
-            print("epoch " , epoch, end=" ->")
+            print("epoch " , epoch, end=" -> ")
             start_time = time.time()
             
             # TRAIN LOOP with BATCH
@@ -151,15 +154,74 @@ class StepModel():
                 
             train_acc = self.train_acc_metric.result()
 
-            print("Training loss : %.4f" % float(l_step_loss_value))
-            print("Training acc : %.4f" % float(train_acc))
+            print("Training loss : %.4f" % float(l_step_loss_value), end='\t')
+            print("Training acc : %.4f" % float(train_acc), end='\t')
 
             self.train_acc_metric.reset_states()
 
             # VALIDATION LOOP with BATCH
+            for x_batch_val, y_batch_val in self.val_dataset:
+                val_logits = self.l_step_model(x_batch_val, training=False)
+                self.val_acc_metric.update_state(y_batch_val, val_logits)
+            val_acc = self.val_acc_metric.result()
+            self.val_acc_metric.reset_states()
+            print("Validation acc: %.4f" % (float(val_acc),), end='\t')
 
+            print("Time taken: %.2fs" % (time.time() - start_time))
+
+    @tf.function
+    def train_with_compile(self):
+        l_step_loss_value = 0.0
+
+        for epoch in range(self.epochs):
+            tf.print("epoch " , epoch, end=" -> ")
+            start_time = time.time()
+            
+            # TRAIN LOOP with BATCH
+            for step, (x_batch_train, y_batch_train) in enumerate(self.train_dataset):
+                with tf.GradientTape() as tape:
+                    logits = self.l_step_model(x_batch_train, training=True)
+                    l_step_loss_value = self.l_step_loss(y_batch_train, logits)
+
+                grads = tape.gradient(l_step_loss_value, self.l_step_model.trainable_weights)
+
+                self.l_step_optimizer.apply_gradients(zip(grads, self.l_step_model.trainable_weights))
+
+                train_acc = self.train_acc_metric.update_state(y_batch_train, logits)
+                
+            train_acc = self.train_acc_metric.result()
+
+            tf.print("Training loss : ", float(l_step_loss_value), end='\t')
+            tf.print("Training acc : " , float(train_acc), end='\t')
+
+            self.train_acc_metric.reset_states()
+
+            # VALIDATION LOOP with BATCH
+            for x_batch_val, y_batch_val in self.val_dataset:
+                val_logits = self.l_step_model(x_batch_val, training=False)
+                self.val_acc_metric.update_state(y_batch_val, val_logits)
+            val_acc = self.val_acc_metric.result()
+            self.val_acc_metric.reset_states()
+            tf.print("Validation acc: " , float(val_acc), end='\t')
+
+            tf.print("Time taken: " , (time.time() - start_time))
+
+    def test(self):
+        predict = self.l_step_model(self.test_x)
+
+        print("======= report ==========")
+        print("MAE: ",mean_absolute_error(y_true=self.test_y, y_pred=predict))
+        print("=========================")
+        print("ME: ", np.mean(np.subtract(self.test_y, predict)))
+        print("std: ", np.std(np.subtract(self.test_y, predict)))
+        print("=========================")
+        print("relative error: ", np.mean(np.divide(np.absolute(np.subtract(self.test_y, predict)), self.test_y))*100)
+        print("=========================")        
+        print("r2 score: ", r2_score(y_true=self.test_y, y_pred=predict))
+        print("=========================")
 
 if __name__ == '__main__':
     setup_gpu()
     model = StepModel()
     model.train()
+    model.test()

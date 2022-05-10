@@ -31,13 +31,6 @@ def load_data(mode="loso"):
     data_path_list = glob('./stride_lab_data/processed_data/*/*')
 
     for path in data_path_list:
-        # if (
-        # # "민세동" in path or
-        # # "원혜연" in path or 
-        # "장승완" in path or 
-        # "이서영" in path or 
-        # "이경준" in path):
-        #     continue
         print(path)
         data = pd.read_csv(path).to_numpy()
         data_list.append(data)
