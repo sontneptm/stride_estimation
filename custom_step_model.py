@@ -30,8 +30,8 @@ def setup_gpu():
 class StepHyperModel(keras_tuner.HyperModel):
     def build(self, hp):
         model = Sequential()
-        hp_filters = hp.Choice('filters', [32, 64, 128, 256, 512])
-        hp_kernel = hp.Choice('kernel', [3, 4, 5, 6, 7, 8])
+        hp_filters = hp.Choice('filters', [8, 16, 32, 64, 128, 256, 512])
+        hp_kernel = hp.Choice('kernel', [2, 3, 4, 5, 6, 7, 8])
         model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish', input_shape=[262,1]))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
@@ -45,7 +45,7 @@ class StepHyperModel(keras_tuner.HyperModel):
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
-        hp_units = hp.Choice('units', [256, 512, 1024, 2048, 4096])
+        hp_units = hp.Choice('units', [64, 128, 256, 512, 1024, 2048, 4096])
         model.add(Dense(units=hp_units, activation='swish'))
         model.add(BN())
         model.add(Dense(units=hp_units, activation='swish'))
@@ -94,7 +94,7 @@ class StepHyperModel(keras_tuner.HyperModel):
         best_epoch_loss = float("inf")
 
         # The custom training loop.
-        for epoch in range(2):
+        for epoch in range(100):
             print(f"Epoch: {epoch}")
 
             for x_data, y_data in train_ds:
@@ -120,7 +120,7 @@ class StepHyperModel(keras_tuner.HyperModel):
 class StepModel():
     def __init__(self) -> None:
         self.epochs = 2000
-        self.learning_rate = 1.46e-4
+        self.learning_rate = 0.000909706183893464
         self.batch_size = 32
         self.input_size = None
 
@@ -147,9 +147,10 @@ class StepModel():
         self.tuner = keras_tuner.Hyperband(
             objective=keras_tuner.Objective("mse_metric", "min"),
             hypermodel=self.l_step_model,
-            max_epochs=10,
+            hyperband_iterations=5,
+            max_epochs=2000,
             factor=3,
-            directory= 'results',
+            #directory= 'results',
             overwrite=True
         )
 
@@ -223,30 +224,29 @@ class StepModel():
         self.val_dataset = self.val_dataset.batch(self.batch_size)
         self.test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y))
 
-    def build_cnn_model(self, hp):
+    def build_cnn_model(self):
         print("==== building MODEL ====")
         model = Sequential()
-        model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish', input_shape=[self.input_size,1]))
+        model.add(Conv1D(filters=32, kernel_size=8, padding='same', activation='swish', input_shape=[self.input_size,1]))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish'))
+        model.add(Conv1D(filters=32, kernel_size=8, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish'))
+        model.add(Conv1D(filters=32, kernel_size=8, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish'))
+        model.add(Conv1D(filters=32, kernel_size=8, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
-        hp_units = hp.Int('units', min_value = 256, max_value = 4048, step = 32)
-        model.add(Dense(units=hp_units, activation='swish'))
+        model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=hp_units, activation='swish'))
+        model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=hp_units, activation='swish'))
+        model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=hp_units, activation='swish'))
+        model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
         model.add(Dense(1, activation=None))
         model.summary()
@@ -323,6 +323,6 @@ class StepModel():
 if __name__ == '__main__':
     setup_gpu()
     model = StepModel()
-    #model.tune_model()
-    model.train()
-    model.test()
+    model.tune_model()
+    #model.train()
+    #model.test()
