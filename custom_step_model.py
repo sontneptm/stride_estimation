@@ -1,3 +1,6 @@
+from distutils.log import fatal
+from msilib.schema import Directory
+from subprocess import call
 import tensorflow as tf
 import pandas as pd
 import numpy as np
@@ -29,7 +32,7 @@ class StepHyperModel(keras_tuner.HyperModel):
         model = Sequential()
         hp_filters = hp.Choice('filters', [32, 64, 128, 256, 512])
         hp_kernel = hp.Choice('kernel', [3, 4, 5, 6, 7, 8])
-        model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish', input_shape=[self.input_size,1]))
+        model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish', input_shape=[262,1]))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish'))
@@ -56,7 +59,12 @@ class StepHyperModel(keras_tuner.HyperModel):
 
         return model
 
-    def fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
+    def fit(self, hp, model, x, y, validation_data,callbacks=None, **kwargs):
+
+        batch_size = hp.Int("batch_size", 32, 128, step=32, default=64)
+        train_ds = tf.data.Dataset.from_tensor_slices((x, y)).batch(batch_size)
+        validation_data = tf.data.Dataset.from_tensor_slices(validation_data).batch(batch_size)
+        
         # Define the optimizer.
         optimizer = Adam(hp.Float("learning_rate", 1e-4, 1e-2, sampling="log", default=1e-3))
         loss_fn = MSE()
@@ -74,9 +82,9 @@ class StepHyperModel(keras_tuner.HyperModel):
 
         def run_val_step(x_data, y_data):
             logits = model(x_data)
-            loss = loss_fn(y_data, logits)
+            #loss = loss_fn(y_data, logits)
             # Update the metric.
-            epoch_loss_metric.update_state(loss)
+            epoch_loss_metric.update_state(y_data, logits)
 
         # Assign the model to the callbacks.
         for callback in callbacks:
@@ -89,7 +97,6 @@ class StepHyperModel(keras_tuner.HyperModel):
         for epoch in range(2):
             print(f"Epoch: {epoch}")
 
-            # Iterate the training data to run the training step.
             for x_data, y_data in train_ds:
                 run_train_step(x_data, y_data)
 
@@ -101,7 +108,7 @@ class StepHyperModel(keras_tuner.HyperModel):
             epoch_loss = float(epoch_loss_metric.result().numpy())
             for callback in callbacks:
                 # The "my_metric" is the objective passed to the tuner.
-                callback.on_epoch_end(epoch, logs={"my_metric": epoch_loss})
+                callback.on_epoch_end(epoch, logs={"mse_metric": epoch_loss})
             epoch_loss_metric.reset_states()
 
             print(f"Epoch loss: {epoch_loss}")
@@ -130,7 +137,29 @@ class StepModel():
         self.val_acc_metric = None
         self.setup_metrics()
 
+        self.l_step_model = None
+        self.tuner = None
+
         self.l_step_model = self.build_cnn_model()
+        
+    def tune_model(self):
+        self.l_step_model = StepHyperModel()
+        self.tuner = keras_tuner.Hyperband(
+            objective=keras_tuner.Objective("mse_metric", "min"),
+            hypermodel=self.l_step_model,
+            max_epochs=10,
+            factor=3,
+            directory= 'results',
+            overwrite=True
+        )
+
+        self.tuner.search(x=self.train_x, y=self.train_y, validation_data=(self.val_x, self.val_y))
+
+        best_hps = self.tuner.get_best_hyperparameters()[0]
+        print(best_hps.values)
+
+        best_model = self.tuner.get_best_models()[0]
+        best_model.summary()
 
     def scale_data(self, train_data, val_data, test_data):
         print("==== scaling DATA ====")
@@ -139,9 +168,6 @@ class StepModel():
         #scaler = MinMaxScaler()
         scaler = RobustScaler()
 
-        total_data = np.concatenate((train_data, val_data, test_data), axis=0)
-
-        #scaler.fit(total_data)
         scaler.fit(train_data)
 
         train_data = scaler.transform(train_data)
@@ -176,6 +202,10 @@ class StepModel():
         val_x = val_x.reshape(-1, self.input_size, 1)
         test_x = test_x.reshape(-1, self.input_size, 1)
 
+        self.train_x = train_x
+        self.train_y = train_y
+        self.val_x = val_x
+        self.val_y = val_y
         self.test_x = test_x
         self.test_y = test_y
 
@@ -293,5 +323,6 @@ class StepModel():
 if __name__ == '__main__':
     setup_gpu()
     model = StepModel()
+    #model.tune_model()
     model.train()
     model.test()
