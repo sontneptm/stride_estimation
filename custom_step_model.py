@@ -11,6 +11,7 @@ from tensorflow.keras.utils import plot_model
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+import keras_tuner as kt
 from glob import glob
 import time
 
@@ -25,7 +26,7 @@ def setup_gpu():
 
 class StepModel():
     def __init__(self) -> None:
-        self.epochs = 1000
+        self.epochs = 2000
         self.learning_rate = 1.46e-4
         self.batch_size = 32
         self.input_size = None
@@ -52,6 +53,9 @@ class StepModel():
         #scaler = MinMaxScaler()
         scaler = RobustScaler()
 
+        total_data = np.concatenate((train_data, val_data, test_data), axis=0)
+
+        #scaler.fit(total_data)
         scaler.fit(train_data)
 
         train_data = scaler.transform(train_data)
@@ -103,7 +107,7 @@ class StepModel():
         self.val_dataset = self.val_dataset.batch(self.batch_size)
         self.test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y))
 
-    def build_cnn_model(self):
+    def build_cnn_model(self, hp):
         print("==== building MODEL ====")
         model = Sequential()
         model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish', input_shape=[self.input_size,1]))
@@ -119,13 +123,14 @@ class StepModel():
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
-        model.add(Dense(4048, activation='swish'))
+        hp_units = hp.Int('units', min_value = 256, max_value = 4048, step = 32)
+        model.add(Dense(units=hp_units, activation='swish'))
         model.add(BN())
-        model.add(Dense(4048, activation='swish'))
+        model.add(Dense(units=hp_units, activation='swish'))
         model.add(BN())
-        model.add(Dense(4048, activation='swish'))
+        model.add(Dense(units=hp_units, activation='swish'))
         model.add(BN())
-        model.add(Dense(4048, activation='swish'))
+        model.add(Dense(units=hp_units, activation='swish'))
         model.add(BN())
         model.add(Dense(1, activation=None))
         model.summary()
@@ -181,47 +186,12 @@ class StepModel():
 
         print("Whole Time taken: %.2fs" % (time.time() - start_time))
 
-    @tf.function
-    def train_with_compile(self):
-        l_step_loss_value = 0.0
-
-        for epoch in range(self.epochs):
-            tf.print("epoch " , epoch, end=" -> ")
-            start_time = time.time()
-            
-            # TRAIN LOOP with BATCH
-            for step, (x_batch_train, y_batch_train) in enumerate(self.train_dataset):
-                with tf.GradientTape() as tape:
-                    logits = self.l_step_model(x_batch_train, training=True)
-                    l_step_loss_value = self.l_step_loss(y_batch_train, logits)
-
-                grads = tape.gradient(l_step_loss_value, self.l_step_model.trainable_weights)
-
-                self.l_step_optimizer.apply_gradients(zip(grads, self.l_step_model.trainable_weights))
-
-                train_acc = self.train_acc_metric.update_state(y_batch_train, logits)
-                
-            train_acc = self.train_acc_metric.result()
-
-            tf.print("Training loss : ", float(l_step_loss_value), end='\t')
-            tf.print("Training acc : " , float(train_acc), end='\t')
-
-            self.train_acc_metric.reset_states()
-
-            # VALIDATION LOOP with BATCH
-            for x_batch_val, y_batch_val in self.val_dataset:
-                val_logits = self.l_step_model(x_batch_val, training=False)
-                self.val_acc_metric.update_state(y_batch_val, val_logits)
-            val_acc = self.val_acc_metric.result()
-            self.val_acc_metric.reset_states()
-            tf.print("Validation acc: " , float(val_acc), end='\t')
-
-            tf.print("Time taken: " , (time.time() - start_time))
-
     def test(self):
         predict = self.l_step_model(self.test_x)
+        predict = predict.numpy()
 
-        print(predict)
+        for i in range(len(self.test_y)):
+            print("real : ", self.test_y[i], " predict : " , predict[i])
 
         print("======= report ==========")
         print("MAE: ",mean_absolute_error(y_true=self.test_y, y_pred=predict))
