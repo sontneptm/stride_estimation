@@ -11,7 +11,7 @@ from tensorflow.keras.utils import plot_model
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-import keras_tuner as kt
+import keras_tuner
 from glob import glob
 import time
 
@@ -23,6 +23,92 @@ def setup_gpu():
             tf.config.experimental.set_memory_growth(gpus[0], True)
         except RuntimeError as e:
             print(e)
+
+class StepHyperModel(keras_tuner.HyperModel):
+    def build(self, hp):
+        model = Sequential()
+        hp_filters = hp.Choice('filters', [32, 64, 128, 256, 512])
+        hp_kernel = hp.Choice('kernel', [3, 4, 5, 6, 7, 8])
+        model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish', input_shape=[self.input_size,1]))
+        model.add(BN())
+        model.add(MaxPooling1D(pool_size=2))
+        model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish'))
+        model.add(BN())
+        model.add(MaxPooling1D(pool_size=2))
+        model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish'))
+        model.add(BN())
+        model.add(MaxPooling1D(pool_size=2))
+        model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish'))
+        model.add(BN())
+        model.add(MaxPooling1D(pool_size=2))
+        model.add(Flatten())
+        hp_units = hp.Choice('units', [256, 512, 1024, 2048, 4096])
+        model.add(Dense(units=hp_units, activation='swish'))
+        model.add(BN())
+        model.add(Dense(units=hp_units, activation='swish'))
+        model.add(BN())
+        model.add(Dense(units=hp_units, activation='swish'))
+        model.add(BN())
+        model.add(Dense(units=hp_units, activation='swish'))
+        model.add(BN())
+        model.add(Dense(1, activation=None))
+        model.summary()
+
+        return model
+
+    def fit(self, hp, model, x, y, validation_data, callbacks=None, **kwargs):
+        # Define the optimizer.
+        optimizer = Adam(hp.Float("learning_rate", 1e-4, 1e-2, sampling="log", default=1e-3))
+        loss_fn = MSE()
+        epoch_loss_metric = MSE_metrics()
+
+        def run_train_step(x_data, y_data):
+            with tf.GradientTape() as tape:
+                logits = model(x_data)
+                loss = loss_fn(y_data, logits)
+                # Add any regularization losses.
+                if model.losses:
+                    loss += tf.math.add_n(model.losses)
+            gradients = tape.gradient(loss, model.trainable_variables)
+            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+        def run_val_step(x_data, y_data):
+            logits = model(x_data)
+            loss = loss_fn(y_data, logits)
+            # Update the metric.
+            epoch_loss_metric.update_state(loss)
+
+        # Assign the model to the callbacks.
+        for callback in callbacks:
+            callback.model = model
+
+        # Record the best validation loss value
+        best_epoch_loss = float("inf")
+
+        # The custom training loop.
+        for epoch in range(2):
+            print(f"Epoch: {epoch}")
+
+            # Iterate the training data to run the training step.
+            for x_data, y_data in train_ds:
+                run_train_step(x_data, y_data)
+
+            # Iterate the validation data to run the validation step.
+            for x_data, y_data in validation_data:
+                run_val_step(x_data, y_data)
+
+            # Calling the callbacks after epoch.
+            epoch_loss = float(epoch_loss_metric.result().numpy())
+            for callback in callbacks:
+                # The "my_metric" is the objective passed to the tuner.
+                callback.on_epoch_end(epoch, logs={"my_metric": epoch_loss})
+            epoch_loss_metric.reset_states()
+
+            print(f"Epoch loss: {epoch_loss}")
+            best_epoch_loss = min(best_epoch_loss, epoch_loss)
+
+        # Return the evaluation metric value.
+        return best_epoch_loss
 
 class StepModel():
     def __init__(self) -> None:
