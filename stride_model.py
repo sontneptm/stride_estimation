@@ -77,7 +77,6 @@ def build_conv1_model(LR, INPUT_SIZE):
     model.add(BN())
     model.add(MaxPooling1D(pool_size=2))
     model.add(Flatten())
-    model.add(BN())
     model.add(Dense(4096, activation='swish'))
     model.add(BN())
     model.add(Dense(4096, activation='swish'))

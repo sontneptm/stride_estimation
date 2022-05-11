@@ -92,7 +92,7 @@ class StepModel():
         print("test y shape: ", test_y.shape)
 
         self.train_dataset = tf.data.Dataset.from_tensor_slices((train_x, train_y))
-        self.train_dataset = self.train_dataset.shuffle(buffer_size=1024).batch(self.batch_size)
+        self.train_dataset = self.train_dataset.shuffle(buffer_size=1024, reshuffle_each_iteration=True).batch(self.batch_size)
         self.val_dataset = tf.data.Dataset.from_tensor_slices((val_x, val_y))
         self.val_dataset = self.val_dataset.batch(self.batch_size)
         self.test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y))
