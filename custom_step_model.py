@@ -10,7 +10,7 @@ from tensorflow.keras.metrics import MeanSquaredError as MSE_metrics
 from tensorflow.keras.utils import plot_model
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from glob import glob
 import time
 
@@ -25,7 +25,7 @@ def setup_gpu():
 
 class StepModel():
     def __init__(self) -> None:
-        self.epochs = 2000
+        self.epochs = 1000
         self.learning_rate = 1.46e-4
         self.batch_size = 32
         self.input_size = None
@@ -47,9 +47,14 @@ class StepModel():
 
     def scale_data(self, train_data, val_data, test_data):
         print("==== scaling DATA ====")
-        scaler = StandardScaler()
+        
+        #scaler = StandardScaler()
+        #scaler = MinMaxScaler()
+        scaler = RobustScaler()
 
-        train_data = scaler.fit_transform(train_data)
+        scaler.fit(train_data)
+
+        train_data = scaler.transform(train_data)
         val_data = scaler.transform(val_data)
         test_data = scaler.transform(test_data)
 
@@ -92,7 +97,8 @@ class StepModel():
         print("test y shape: ", test_y.shape)
 
         self.train_dataset = tf.data.Dataset.from_tensor_slices((train_x, train_y))
-        self.train_dataset = self.train_dataset.shuffle(buffer_size=1024, reshuffle_each_iteration=True).batch(self.batch_size)
+        self.org_train_dataset = self.train_dataset
+        self.train_dataset = self.train_dataset.shuffle(buffer_size=128, reshuffle_each_iteration=True).batch(self.batch_size)
         self.val_dataset = tf.data.Dataset.from_tensor_slices((val_x, val_y))
         self.val_dataset = self.val_dataset.batch(self.batch_size)
         self.test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y))
@@ -101,18 +107,26 @@ class StepModel():
         print("==== building MODEL ====")
         model = Sequential()
         model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish', input_shape=[self.input_size,1]))
+        model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish'))
+        model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish'))
+        model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Conv1D(filters=256, kernel_size=4, padding='same', activation='swish'))
+        model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
-        model.add(Dense(4096, activation='swish'))
-        model.add(Dense(4096, activation='swish'))
-        model.add(Dense(4096, activation='swish'))
-        model.add(Dense(4096, activation='swish'))
+        model.add(Dense(4048, activation='swish'))
+        model.add(BN())
+        model.add(Dense(4048, activation='swish'))
+        model.add(BN())
+        model.add(Dense(4048, activation='swish'))
+        model.add(BN())
+        model.add(Dense(4048, activation='swish'))
+        model.add(BN())
         model.add(Dense(1, activation=None))
         model.summary()
 
@@ -161,6 +175,8 @@ class StepModel():
             self.val_acc_metric.reset_states()
             print("Validation acc: %.4f" % (float(val_acc),), end='\t')
 
+            self.train_dataset = self.org_train_dataset.shuffle(buffer_size=128, reshuffle_each_iteration=True).batch(self.batch_size)
+
             print("Time taken: %.2fs" % (time.time() - epoch_time))
 
         print("Whole Time taken: %.2fs" % (time.time() - start_time))
@@ -204,6 +220,8 @@ class StepModel():
 
     def test(self):
         predict = self.l_step_model(self.test_x)
+
+        print(predict)
 
         print("======= report ==========")
         print("MAE: ",mean_absolute_error(y_true=self.test_y, y_pred=predict))
