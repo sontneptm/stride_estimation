@@ -181,13 +181,13 @@ class Subject():
             l_ankle_y = self.moving_average(l_ankle_y, 5)
             l_ankle_z = self.moving_average(l_ankle_z, 5)
 
-            db_x = np.cumsum(np.cumsum(l_ankle_x))
-            db_y = np.cumsum(np.cumsum(l_ankle_y))
-            db_z = np.cumsum(np.cumsum(l_ankle_z))
-
+            l_db_y = np.cumsum(np.cumsum(l_ankle_y))
+        
             r_ankle_x = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,1]
             r_ankle_y = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,2]
             r_ankle_z = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,3]
+
+            r_db_y = np.cumsum(np.cumsum(r_ankle_y))
 
             l_svm = []
             r_svm = []
@@ -216,15 +216,14 @@ class Subject():
                     l_ankle_x = np.append(l_ankle_x, 0)
                     l_ankle_y = np.append(l_ankle_y, 0)
                     l_ankle_z = np.append(l_ankle_z, 0)
-                    db_x = np.append(db_x, db_x[len(db_x)-1])
-                    db_y = np.append(db_y, db_y[len(db_y)-1])
-                    db_z = np.append(db_z, db_z[len(db_z)-1])
+                    l_db_y = np.append(l_db_y, l_db_y[len(l_db_y)-1])
                     l_svm = np.append(l_svm, 0)
 
                 while (len(r_ankle_x)<50):
                     r_ankle_x = np.append(r_ankle_x, 0)
                     r_ankle_y = np.append(r_ankle_y, 0)
                     r_ankle_z = np.append(r_ankle_z, 0)
+                    r_db_y = np.append(r_db_y, r_db_y[len(r_db_y)-1])
                     r_svm = np.append(r_svm, 0)
     
             while (len(l_pp_data)<125):
@@ -242,17 +241,17 @@ class Subject():
             total_data = np.concatenate((total_data, l_pp_data), axis=0)
             total_data = np.concatenate((total_data, r_pp_data), axis=0)
             
-            # total_data = np.concatenate((total_data, db_x), axis=0)
-            # total_data = np.concatenate((total_data, db_y), axis=0)
-            # total_data = np.concatenate((total_data, db_z), axis=0)
+            total_data = np.concatenate((total_data, l_db_y), axis=0)
+            #total_data = np.concatenate((total_data, r_db_y), axis=0)
+            
 
-            # total_data = np.concatenate((total_data, l_ankle_x), axis=0)
-            # total_data = np.concatenate((total_data, l_ankle_y), axis=0)
-            # total_data = np.concatenate((total_data, l_ankle_z), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_x), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_y), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_z), axis=0)
 
-            # total_data = np.concatenate((total_data, r_ankle_x), axis=0)
-            # total_data = np.concatenate((total_data, r_ankle_y), axis=0)
-            # total_data = np.concatenate((total_data, r_ankle_z), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_x), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_y), axis=0)
+            total_data = np.concatenate((total_data, r_ankle_z), axis=0)
 
             total_data = str(total_data)[1:-1].split()
             total_data = str(list(map(np.float32, total_data)))[1:-1]

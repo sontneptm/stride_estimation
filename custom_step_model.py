@@ -32,7 +32,7 @@ class StepHyperModel(keras_tuner.HyperModel):
         model = Sequential()
         hp_filters = hp.Choice('filters', [8, 16, 32, 64, 128, 256, 512])
         hp_kernel = hp.Choice('kernel', [2, 3, 4, 5, 6, 7, 8])
-        model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish', input_shape=[262,1]))
+        model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish', input_shape=[612,1]))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish'))
@@ -75,6 +75,7 @@ class StepHyperModel(keras_tuner.HyperModel):
                 logits = model(x_data)
                 loss = loss_fn(y_data, logits)
                 # Add any regularization losses.
+
                 if model.losses:
                     loss += tf.math.add_n(model.losses)
             gradients = tape.gradient(loss, model.trainable_variables)
@@ -94,7 +95,7 @@ class StepHyperModel(keras_tuner.HyperModel):
         best_epoch_loss = float("inf")
 
         # The custom training loop.
-        for epoch in range(100):
+        for epoch in range(2):
             print(f"Epoch: {epoch}")
 
             for x_data, y_data in train_ds:
@@ -120,8 +121,8 @@ class StepHyperModel(keras_tuner.HyperModel):
 class StepModel():
     def __init__(self) -> None:
         self.epochs = 2000
-        self.learning_rate = 0.000909706183893464
-        self.batch_size = 32
+        self.learning_rate = 0.0012897
+        self.batch_size = 64
         self.input_size = None
 
         self.train_dataset =None
@@ -129,18 +130,18 @@ class StepModel():
         self.test_dataset =None   
         self.load_dataset()
 
-        self.l_step_optimizer = None
-        self.l_step_loss = None
+        self.step_optimizer = None
+        self.step_loss = None
         self.setup_optimizers()
 
         self.train_acc_metric = None 
         self.val_acc_metric = None
         self.setup_metrics()
 
-        self.l_step_model = None
+        self.step_model = None
         self.tuner = None
 
-        self.l_step_model = self.build_cnn_model()
+        self.step_model = self.build_cnn_model()
         
     def tune_model(self):
         self.l_step_model = StepHyperModel()
@@ -169,7 +170,9 @@ class StepModel():
         #scaler = MinMaxScaler()
         scaler = RobustScaler()
 
-        scaler.fit(train_data)
+        total_data = np.concatenate((train_data, val_data), axis=0)
+
+        scaler.fit(total_data)
 
         train_data = scaler.transform(train_data)
         val_data = scaler.transform(val_data)
@@ -191,7 +194,7 @@ class StepModel():
                 data_list = np.concatenate((data_list,data), axis=0)
 
         x_data = data_list[:,3:]
-        y_data = data_list[:,2:3]
+        y_data = data_list[:,0]
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
         train_x, val_x, train_y, val_y =  train_test_split(train_x, train_y, test_size=0.2, random_state=42)
@@ -227,26 +230,26 @@ class StepModel():
     def build_cnn_model(self):
         print("==== building MODEL ====")
         model = Sequential()
-        model.add(Conv1D(filters=32, kernel_size=8, padding='same', activation='swish', input_shape=[self.input_size,1]))
+        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish', input_shape=[self.input_size,1]))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=32, kernel_size=8, padding='same', activation='swish'))
+        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=32, kernel_size=8, padding='same', activation='swish'))
+        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=32, kernel_size=8, padding='same', activation='swish'))
+        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
-        model.add(Dense(units=4096, activation='swish'))
+        model.add(Dense(units=256, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=4096, activation='swish'))
+        model.add(Dense(units=256, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=4096, activation='swish'))
+        model.add(Dense(units=256, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=4096, activation='swish'))
+        model.add(Dense(units=256, activation='swish'))
         model.add(BN())
         model.add(Dense(1, activation=None))
         model.summary()
@@ -255,8 +258,8 @@ class StepModel():
 
     def setup_optimizers(self):
         print("==== setting up OPT ====")
-        self.l_step_optimizer = Adam(learning_rate=self.learning_rate)
-        self.l_step_loss = MSE()
+        self.step_optimizer = Adam(learning_rate=self.learning_rate)
+        self.step_loss = MSE()
 
     def setup_metrics(self):
         print("==== setting up METRICS ====")
@@ -272,29 +275,24 @@ class StepModel():
             # TRAIN LOOP with BATCH
             for step, (x_batch_train, y_batch_train) in enumerate(self.train_dataset):
                 with tf.GradientTape() as tape:
-                    logits = self.l_step_model(x_batch_train, training=True)
-                    l_step_loss_value = self.l_step_loss(y_batch_train, logits)
+                    logits = self.step_model(x_batch_train, training=True)
+                    step_loss_value = self.step_loss(y_batch_train, logits)
 
-                grads = tape.gradient(l_step_loss_value, self.l_step_model.trainable_variables)
+                grads = tape.gradient(step_loss_value, self.step_model.trainable_variables)
 
-                self.l_step_optimizer.apply_gradients(zip(grads, self.l_step_model.trainable_variables))
+                self.step_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
-                train_acc = self.train_acc_metric.update_state(y_batch_train, logits)
-                
-            train_acc = self.train_acc_metric.result()
-
-            print("Training loss : %.4f" % float(l_step_loss_value), end='\t')
-            print("Training acc : %.4f" % float(train_acc), end='\t')
-
-            self.train_acc_metric.reset_states()
+            print("train loss : %.4f" % float(step_loss_value), end='\t')
 
             # VALIDATION LOOP with BATCH
             for x_batch_val, y_batch_val in self.val_dataset:
-                val_logits = self.l_step_model(x_batch_val, training=False)
+                val_logits = self.step_model(x_batch_val, training=False)
                 self.val_acc_metric.update_state(y_batch_val, val_logits)
+
             val_acc = self.val_acc_metric.result()
             self.val_acc_metric.reset_states()
-            print("Validation acc: %.4f" % (float(val_acc),), end='\t')
+            
+            print("val loss: %.4f" % (float(val_acc),), end='\t')
 
             self.train_dataset = self.org_train_dataset.shuffle(buffer_size=128, reshuffle_each_iteration=True).batch(self.batch_size)
 
@@ -303,7 +301,8 @@ class StepModel():
         print("Whole Time taken: %.2fs" % (time.time() - start_time))
 
     def test(self):
-        predict = self.l_step_model(self.test_x)
+        predict = self.step_model(self.test_x)
+    
         predict = predict.numpy()
 
         for i in range(len(self.test_y)):
@@ -324,5 +323,5 @@ if __name__ == '__main__':
     setup_gpu()
     model = StepModel()
     model.tune_model()
-    #model.train()
-    #model.test()
+    # model.train()
+    # model.test()
