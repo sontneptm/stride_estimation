@@ -150,7 +150,7 @@ class StepModel():
             hyperband_iterations=5,
             max_epochs=2000,
             factor=3,
-            #directory= 'results',
+            directory= 'results',
             overwrite=True
         )
 
