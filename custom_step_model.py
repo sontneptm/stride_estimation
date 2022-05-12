@@ -30,7 +30,7 @@ def setup_gpu():
 class StepHyperModel(keras_tuner.HyperModel):
     def build(self, hp):
         model = Sequential()
-        hp_filters = hp.Choice('filters', [8, 16, 32, 64, 128, 256, 512])
+        hp_filters = hp.Choice('filters', [ 64, 128, 256, 512])
         hp_kernel = hp.Choice('kernel', [2, 3, 4, 5, 6, 7, 8])
         model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish', input_shape=[612,1]))
         model.add(BN())
@@ -45,7 +45,7 @@ class StepHyperModel(keras_tuner.HyperModel):
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
-        hp_units = hp.Choice('units', [64, 128, 256, 512, 1024, 2048, 4096])
+        hp_units = hp.Choice('units', [1024])
         model.add(Dense(units=hp_units, activation='swish'))
         model.add(BN())
         model.add(Dense(units=hp_units, activation='swish'))
@@ -61,12 +61,14 @@ class StepHyperModel(keras_tuner.HyperModel):
 
     def fit(self, hp, model, x, y, validation_data,callbacks=None, **kwargs):
 
-        batch_size = hp.Int("batch_size", 32, 128, step=32, default=64)
+        #batch_size = hp.Int("batch_size", 32, 128, step=32, default=64)
+        batch_size = hp.Int("batch_size", 32, 64, step=1, default=64)
         train_ds = tf.data.Dataset.from_tensor_slices((x, y)).batch(batch_size)
         validation_data = tf.data.Dataset.from_tensor_slices(validation_data).batch(batch_size)
         
         # Define the optimizer.
-        optimizer = Adam(hp.Float("learning_rate", 1e-4, 1e-2, sampling="log", default=1e-3))
+        #optimizer = Adam(hp.Float("learning_rate", 1e-4, 1e-2, sampling="log", default=1e-3))
+        optimizer = Adam(hp.Float("learning_rate", 1e-4, 1e-3, sampling="log", default=1e-3))
         loss_fn = MSE()
         epoch_loss_metric = MSE_metrics()
 
@@ -121,7 +123,7 @@ class StepHyperModel(keras_tuner.HyperModel):
 class StepModel():
     def __init__(self) -> None:
         self.epochs = 2000
-        self.learning_rate = 0.0012897
+        self.learning_rate = 1.46e-4
         self.batch_size = 64
         self.input_size = None
 
@@ -243,13 +245,13 @@ class StepModel():
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
-        model.add(Dense(units=256, activation='swish'))
+        model.add(Dense(units=1024, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=256, activation='swish'))
+        model.add(Dense(units=1024, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=256, activation='swish'))
+        model.add(Dense(units=1024, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=256, activation='swish'))
+        model.add(Dense(units=1024, activation='swish'))
         model.add(BN())
         model.add(Dense(1, activation=None))
         model.summary()
@@ -323,5 +325,5 @@ if __name__ == '__main__':
     setup_gpu()
     model = StepModel()
     model.tune_model()
-    # model.train()
-    # model.test()
+    #model.train()
+    #model.test()

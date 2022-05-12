@@ -154,7 +154,6 @@ class Subject():
         for info in self.stride_info:
             total_data = []
             stride_length = info[2]
-
             r_step_length = info[3]
             l_step_length = info[4]
 
