@@ -250,6 +250,8 @@ class Subject():
             
             total_data = np.concatenate((total_data, l_db_y), axis=0)
 
+            total_data = np.concatenate((total_data, l_svm), axis=0)
+
             total_data = np.concatenate((total_data, l_ankle_x), axis=0)
             total_data = np.concatenate((total_data, l_ankle_y), axis=0)
             total_data = np.concatenate((total_data, l_ankle_z), axis=0)
