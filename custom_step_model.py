@@ -14,6 +14,7 @@ from tensorflow.keras.utils import plot_model
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.neighbors import LocalOutlierFactor as LOF
 import keras_tuner
 from glob import glob
 import time
@@ -122,7 +123,7 @@ class StepHyperModel(keras_tuner.HyperModel):
 
 class StepModel():
     def __init__(self) -> None:
-        self.epochs = 3000
+        self.epochs = 4000
         self.learning_rate = 1.46e-4
         self.batch_size = 64
         self.input_size = None
@@ -182,6 +183,32 @@ class StepModel():
 
         return train_data, val_data, test_data
 
+    def remove_outlier(self, train_x, test_x, train_y, test_y):
+        clf = LOF(n_neighbors=20, contamination=0.15, novelty=True)
+        clf.fit(train_x)
+        train_pred = clf.predict(train_x)
+        test_pred = clf.predict(test_x)
+
+        rtn_train_x = []
+        rtn_test_x = []
+        rtn_train_y = []
+        rtn_test_y = []
+
+        for i in range(len(train_pred)):
+            if train_pred[i] == 1:
+                rtn_train_x.append(train_x[i])
+                rtn_train_y.append(train_y[i])
+                
+        for i in range(len(test_pred)):
+            if test_pred[i] == 1:
+                rtn_test_x.append(test_x[i])
+                rtn_test_y.append(test_y[i])
+
+        print("train_outlier predict : ", train_pred)
+        
+
+
+
     def load_dataset(self):
         print("==== loading DATA ====")
         data_path_list = glob('./stride_lab_data/processed_data/*/*')
@@ -196,9 +223,12 @@ class StepModel():
                 data_list = np.concatenate((data_list,data), axis=0)
 
         x_data = data_list[:,3:]
-        y_data = data_list[:,2]
+        y_data = data_list[:,0]
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
+
+        self.remove_outlier(train_x, test_x, train_y, test_y)
+
         train_x, val_x, train_y, val_y =  train_test_split(train_x, train_y, test_size=0.1, random_state=42)
 
         train_x, val_x, test_x = self.scale_data(train_x, val_x, test_x)
@@ -325,5 +355,5 @@ if __name__ == '__main__':
     setup_gpu()
     model = StepModel()
     #model.tune_model()
-    model.train()
-    model.test()
+    # model.train()
+    # model.test()
