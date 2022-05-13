@@ -162,33 +162,43 @@ class Subject():
             start_time = self.change_str_to_time(self.l_plantar_pressure[info[0]][0])
             end_time = self.change_str_to_time(self.l_plantar_pressure[info[1]][0])
             
-            l_ankle_start_index, l_ankle_end_index = self.find_index_by_time(type='l_ankle', s_time=start_time, e_time=end_time)
-            r_ankle_start_index, r_ankle_end_index = self.find_index_by_time(type='r_ankle', s_time=start_time, e_time=end_time)
-            l_ankle_end_index = l_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
-            r_ankle_end_index = r_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
-
             r_pp_start_index, r_pp_end_index = self.find_index_by_time(type='r_pp', s_time=start_time, e_time=end_time)
-
-            gait_features = self.extract_gait_features(self.l_plantar_pressure[info[0]:info[1]], self.r_plantar_pressure[r_pp_start_index:r_pp_end_index])
 
             l_pp_data = self.l_plantar_pressure[info[0]:info[1]][:,1]
             r_pp_data = self.r_plantar_pressure[r_pp_start_index:r_pp_end_index][:,1]
+
+            gait_features = self.extract_gait_features(self.l_plantar_pressure[info[0]:info[1]], self.r_plantar_pressure[r_pp_start_index:r_pp_end_index])
+
+            l_ankle_start_index, l_ankle_end_index = self.find_index_by_time(type='l_ankle', s_time=start_time, e_time=end_time)
+            r_ankle_start_index, r_ankle_end_index = self.find_index_by_time(type='r_ankle', s_time=start_time, e_time=end_time)
+
+            l_ankle_swing_index, _ = self.find_index_by_time(type='l_ankle', s_time=self.swing_t, e_time=end_time)
+            l_ankle_swing_index = l_ankle_swing_index - l_ankle_start_index     
+
+            l_ankle_end_index = l_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
+            r_ankle_end_index = r_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
 
             l_ankle_x = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,1]
             l_ankle_y = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,2]
             l_ankle_z = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,3]
 
-            l_ankle_x = self.moving_average(l_ankle_x, 5)
-            l_ankle_y = self.moving_average(l_ankle_y, 5)
-            l_ankle_z = self.moving_average(l_ankle_z, 5)
+            l_ankle_y_for_db = l_ankle_y[l_ankle_swing_index:]
+            l_ankle_x = l_ankle_x[l_ankle_swing_index:]
+            l_ankle_y = l_ankle_y[l_ankle_swing_index:]
+            l_ankle_z = l_ankle_z[l_ankle_swing_index:]
 
-            l_db_y = np.cumsum(np.cumsum(l_ankle_y))
+            try:
+                l_ankle_x = self.moving_average(l_ankle_x, 3)
+                l_ankle_y = self.moving_average(l_ankle_y, 3)
+                l_ankle_z = self.moving_average(l_ankle_z, 3)
+            except:
+                continue
+
+            l_db_y = np.cumsum(np.cumsum(l_ankle_y_for_db))
         
             r_ankle_x = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,1]
             r_ankle_y = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,2]
             r_ankle_z = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,3]
-
-            r_db_y = np.cumsum(np.cumsum(r_ankle_y))
 
             l_svm = []
             r_svm = []
@@ -213,7 +223,7 @@ class Subject():
             if len(r_ankle_x) < 20 or len(r_ankle_x) > 60:
                 continue
             else:
-                while (len(l_ankle_x)<50):
+                while (len(l_ankle_x)<30):
                     l_ankle_x = np.append(l_ankle_x, 0)
                     l_ankle_y = np.append(l_ankle_y, 0)
                     l_ankle_z = np.append(l_ankle_z, 0)
@@ -224,7 +234,6 @@ class Subject():
                     r_ankle_x = np.append(r_ankle_x, 0)
                     r_ankle_y = np.append(r_ankle_y, 0)
                     r_ankle_z = np.append(r_ankle_z, 0)
-                    r_db_y = np.append(r_db_y, r_db_y[len(r_db_y)-1])
                     r_svm = np.append(r_svm, 0)
     
             while (len(l_pp_data)<125):
@@ -241,14 +250,8 @@ class Subject():
 
             total_data = np.concatenate((total_data, l_pp_data), axis=0)
             total_data = np.concatenate((total_data, r_pp_data), axis=0)
-
-
-            l_ankle_swing_index, _ = self.find_index_by_time(type='l_ankle', s_time=self.swing_t, e_time=end_time)
-            print(l_ankle_swing_index)
             
-            
-            # total_data = np.concatenate((total_data, l_db_y), axis=0)
-            # total_data = np.concatenate((total_data, r_db_y), axis=0)
+            total_data = np.concatenate((total_data, l_db_y), axis=0)
 
             total_data = np.concatenate((total_data, l_ankle_x), axis=0)
             total_data = np.concatenate((total_data, l_ankle_y), axis=0)
@@ -262,7 +265,7 @@ class Subject():
             total_data = str(list(map(np.float32, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
 
-            #file.write(total_data+'\n')
+            file.write(total_data+'\n')
 
     def find_index_by_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data
