@@ -43,11 +43,11 @@ def load_data(mode="loso"):
 
             if i<div:
                 for d in data:
-                    train_y.append(d[2:3])
+                    train_y.append(d[0])
                     train_x.append(d[3:])
             elif i>=div:
                 for d in data:
-                    test_y.append(d[2:3])
+                    test_y.append(d[0])
                     test_x.append(d[3:])
 
     elif mode=="shuffle":
@@ -55,7 +55,7 @@ def load_data(mode="loso"):
             data = data_list[i]
 
             for d in data:
-                y_data.append(d[:3])
+                y_data.append(d[0])
                 x_data.append(d[3:])
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
@@ -103,46 +103,31 @@ if __name__ == "__main__":
 
     INPUT_SIZE = len(train_x[0])
     EPOCH = 2000
-    BATCH_SIZE = 32
+    BATCH_SIZE = 64
     LR = 1.46e-4
-
-    train_yr = train_y[:,1]
-    train_yl = train_y[:,2]
-    test_yr = test_y[:,1]
-    test_yl = test_y[:,2]
 
     train_x = train_x.reshape(-1,INPUT_SIZE,1)
     test_x = test_x.reshape(-1,INPUT_SIZE,1)
 
-    r_step_model = build_conv1_model(LR, INPUT_SIZE)
-    l_step_model = build_conv1_model(LR, INPUT_SIZE)
+    step_model = build_conv1_model(LR, INPUT_SIZE)
 
-    plot_model(r_step_model, to_file='model.png', show_shapes=True, show_layer_names=True)
+    #plot_model(step_model, to_file='model.png', show_shapes=True, show_layer_names=True)
 
-    r_step_model.fit(train_x, train_yr, batch_size=BATCH_SIZE, epochs=EPOCH, shuffle=True, validation_split=0.1)
-    l_step_model.fit(train_x, train_yr, batch_size=BATCH_SIZE, epochs=EPOCH, shuffle=True, validation_split=0.1)
+    step_model.fit(train_x, train_y, batch_size=BATCH_SIZE, epochs=EPOCH, shuffle=True, validation_split=0.1)
 
-    predict_yr = r_step_model.predict(test_x)
-    predict_yl = l_step_model.predict(test_x)
+    predict_y = step_model.predict(test_x)
 
     print("======= report ==========")
 
-    print("r_MAE: ",mean_absolute_error(y_true=test_yr, y_pred=predict_yr))
-    print("l_MAE: ",mean_absolute_error(y_true=test_yl, y_pred=predict_yl))
+    print("MAE: ",mean_absolute_error(y_true=test_y, y_pred=predict_y))
     print("=========================")
 
-    print("r_ME: ", np.mean(np.subtract(test_yr, predict_yr)))
-    print("r_std: ", np.std(np.subtract(test_yr, predict_yr)))
+    print("ME: ", np.mean(np.subtract(test_y, predict_y)))
+    print("std: ", np.std(np.subtract(test_y, predict_y)))
     print("=========================")
 
-    print("l_ME: ", np.mean(np.subtract(test_yl, predict_yl)))
-    print("l_std: ", np.std(np.subtract(test_yl, predict_yl)))
-    print("=========================")
-
-    print("r_relative error: ", np.mean(np.divide(np.absolute(np.subtract(test_yr, predict_yr)), test_yr))*100)
-    print("l_relative error: ", np.mean(np.divide(np.absolute(np.subtract(test_yl, predict_yl)), test_yl))*100)
+    print("relative error: ", np.mean(np.divide(np.absolute(np.subtract(test_y, predict_y)), test_y))*100)
     print("=========================")
     
-    print("r_r2 score: ", r2_score(y_true=test_yr, y_pred=predict_yr))
-    print("l_r2 score: ", r2_score(y_true=test_yl, y_pred=predict_yl))
+    print("r2 score: ", r2_score(y_true=test_y, y_pred=predict_y))
     print("=========================")

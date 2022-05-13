@@ -122,7 +122,7 @@ class StepHyperModel(keras_tuner.HyperModel):
 
 class StepModel():
     def __init__(self) -> None:
-        self.epochs = 2000
+        self.epochs = 4000
         self.learning_rate = 1.46e-4
         self.batch_size = 64
         self.input_size = None
@@ -244,7 +244,15 @@ class StepModel():
         model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
+        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
+        model.add(BN())
+        model.add(MaxPooling1D(pool_size=2))
+        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
+        model.add(BN())
+        model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
+        model.add(Dense(units=1024, activation='swish'))
+        model.add(BN())
         model.add(Dense(units=1024, activation='swish'))
         model.add(BN())
         model.add(Dense(units=1024, activation='swish'))
@@ -324,6 +332,6 @@ class StepModel():
 if __name__ == '__main__':
     setup_gpu()
     model = StepModel()
-    model.tune_model()
-    #model.train()
-    #model.test()
+    #model.tune_model()
+    model.train()
+    model.test()
