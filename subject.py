@@ -182,17 +182,14 @@ class Subject():
             l_ankle_y = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,2]
             l_ankle_z = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,3]
 
+            l_ankle_x = self.moving_average(l_ankle_x, 5)
+            l_ankle_y = self.moving_average(l_ankle_y, 5)
+            l_ankle_z = self.moving_average(l_ankle_z, 5)
+
             l_ankle_y_for_db = l_ankle_y[l_ankle_swing_index:]
             l_ankle_x = l_ankle_x[l_ankle_swing_index:]
             l_ankle_y = l_ankle_y[l_ankle_swing_index:]
             l_ankle_z = l_ankle_z[l_ankle_swing_index:]
-
-            try:
-                l_ankle_x = self.moving_average(l_ankle_x, 3)
-                l_ankle_y = self.moving_average(l_ankle_y, 3)
-                l_ankle_z = self.moving_average(l_ankle_z, 3)
-            except:
-                continue
 
             l_db_y = np.cumsum(np.cumsum(l_ankle_y_for_db))
         
@@ -218,9 +215,9 @@ class Subject():
                 r_svm.append(np.sqrt(np.power(x,2)+np.power(y,2)+np.power(z,2)))
 
 
-            if len(l_ankle_x) < 20 or len(l_ankle_x) > 60:
+            if len(l_ankle_x) < 5 or len(l_ankle_x) > 30:
                 continue
-            if len(r_ankle_x) < 20 or len(r_ankle_x) > 60:
+            if len(r_ankle_x) < 5 or len(r_ankle_x) > 50:
                 continue
             else:
                 while (len(l_ankle_x)<30):

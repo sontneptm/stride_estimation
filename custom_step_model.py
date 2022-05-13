@@ -122,7 +122,7 @@ class StepHyperModel(keras_tuner.HyperModel):
 
 class StepModel():
     def __init__(self) -> None:
-        self.epochs = 4000
+        self.epochs = 3000
         self.learning_rate = 1.46e-4
         self.batch_size = 64
         self.input_size = None
@@ -196,10 +196,10 @@ class StepModel():
                 data_list = np.concatenate((data_list,data), axis=0)
 
         x_data = data_list[:,3:]
-        y_data = data_list[:,0]
+        y_data = data_list[:,2]
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
-        train_x, val_x, train_y, val_y =  train_test_split(train_x, train_y, test_size=0.2, random_state=42)
+        train_x, val_x, train_y, val_y =  train_test_split(train_x, train_y, test_size=0.1, random_state=42)
 
         train_x, val_x, test_x = self.scale_data(train_x, val_x, test_x)
         self.input_size = len(train_x[0])
@@ -244,22 +244,14 @@ class StepModel():
         model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
-        model.add(BN())
-        model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
-        model.add(BN())
-        model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
-        model.add(Dense(units=1024, activation='swish'))
+        model.add(Dense(units=2048, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=1024, activation='swish'))
+        model.add(Dense(units=2048, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=1024, activation='swish'))
+        model.add(Dense(units=2048, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=1024, activation='swish'))
-        model.add(BN())
-        model.add(Dense(units=1024, activation='swish'))
+        model.add(Dense(units=2048, activation='swish'))
         model.add(BN())
         model.add(Dense(1, activation=None))
         model.summary()
