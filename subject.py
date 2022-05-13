@@ -113,6 +113,8 @@ class Subject():
         swing_t = self.change_str_to_time(l_time[swing_index])
         last_t = self.change_str_to_time(l_time[l_pp_len-1])
 
+        self.swing_t = swing_t
+
         stride_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - last_t))
         r_step_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - r_swing_end_t))
         l_step_time = self.convert_timedelata_to_milisec(np.absolute(r_swing_end_t - last_t))
@@ -239,24 +241,28 @@ class Subject():
 
             total_data = np.concatenate((total_data, l_pp_data), axis=0)
             total_data = np.concatenate((total_data, r_pp_data), axis=0)
+
+
+            l_ankle_swing_index, _ = self.find_index_by_time(type='l_ankle', s_time=self.swing_t, e_time=end_time)
+            print(l_ankle_swing_index)
             
-            total_data = np.concatenate((total_data, l_db_y), axis=0)
-            #total_data = np.concatenate((total_data, r_db_y), axis=0)
             
+            # total_data = np.concatenate((total_data, l_db_y), axis=0)
+            # total_data = np.concatenate((total_data, r_db_y), axis=0)
 
             total_data = np.concatenate((total_data, l_ankle_x), axis=0)
             total_data = np.concatenate((total_data, l_ankle_y), axis=0)
             total_data = np.concatenate((total_data, l_ankle_z), axis=0)
 
-            total_data = np.concatenate((total_data, r_ankle_x), axis=0)
-            total_data = np.concatenate((total_data, r_ankle_y), axis=0)
-            total_data = np.concatenate((total_data, r_ankle_z), axis=0)
+            # total_data = np.concatenate((total_data, r_ankle_x), axis=0)
+            # total_data = np.concatenate((total_data, r_ankle_y), axis=0)
+            # total_data = np.concatenate((total_data, r_ankle_z), axis=0)
 
             total_data = str(total_data)[1:-1].split()
             total_data = str(list(map(np.float32, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
 
-            file.write(total_data+'\n')
+            #file.write(total_data+'\n')
 
     def find_index_by_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data
