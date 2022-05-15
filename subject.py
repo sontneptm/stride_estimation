@@ -203,12 +203,12 @@ class Subject():
             r_ankle_y = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,2]
             r_ankle_z = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,3]
             
-            try:
-                r_ankle_x = r_ankle_x[r_ankle_swing_start_index:r_ankle_swing_end_index]
-                r_ankle_y = r_ankle_y[r_ankle_swing_start_index:r_ankle_swing_end_index]
-                r_ankle_z = r_ankle_z[r_ankle_swing_start_index:r_ankle_swing_end_index]
-            except:
-                continue
+            # try:
+            #     r_ankle_x = r_ankle_x[r_ankle_swing_start_index:r_ankle_swing_end_index]
+            #     r_ankle_y = r_ankle_y[r_ankle_swing_start_index:r_ankle_swing_end_index]
+            #     r_ankle_z = r_ankle_z[r_ankle_swing_start_index:r_ankle_swing_end_index]
+            # except:
+            #     continue
 
             l_svm = []
             r_svm = []
@@ -229,19 +229,19 @@ class Subject():
 
             if len(l_ankle_x) < 5 or len(l_ankle_x) > 30:
                 continue
-            if len(r_ankle_x) < 5 or len(r_ankle_x) > 30:
+            if len(r_ankle_x) < 5 or len(r_ankle_x) > 50:
                 continue
             while (len(l_ankle_x)<30):
-                l_ankle_x = np.append(l_ankle_x, 0)
-                l_ankle_y = np.append(l_ankle_y, 0)
-                l_ankle_z = np.append(l_ankle_z, 0)
+                l_ankle_x = np.append(l_ankle_x, l_ankle_x[len(l_ankle_x)-1])
+                l_ankle_y = np.append(l_ankle_y, l_ankle_y[len(l_ankle_y)-1])
+                l_ankle_z = np.append(l_ankle_z, l_ankle_z[len(l_ankle_z)-1])
                 l_db_y = np.append(l_db_y, l_db_y[len(l_db_y)-1])
                 l_svm = np.append(l_svm, 0)
 
-            while (len(r_ankle_x)<30):
-                r_ankle_x = np.append(r_ankle_x, 0)
-                r_ankle_y = np.append(r_ankle_y, 0)
-                r_ankle_z = np.append(r_ankle_z, 0)
+            while (len(r_ankle_x)<50):
+                r_ankle_x = np.append(r_ankle_x, l_ankle_x[len(l_ankle_x)-1])
+                r_ankle_y = np.append(r_ankle_y, l_ankle_y[len(l_ankle_y)-1])
+                r_ankle_z = np.append(r_ankle_z, l_ankle_z[len(l_ankle_z)-1])
                 r_svm = np.append(r_svm, 0)
     
             while (len(l_pp_data)<125):
@@ -262,8 +262,9 @@ class Subject():
             total_data = np.concatenate((total_data, l_db_y), axis=0)
 
             total_data = np.concatenate((total_data, l_svm), axis=0)
+            total_data = np.concatenate((total_data, r_svm), axis=0)
 
-            total_data = np.concatenate((total_data, l_ankle_x), axis=0)
+            total_data = np.concatenate((total_data, l_ankle_z), axis=0)
             total_data = np.concatenate((total_data, l_ankle_y), axis=0)
             total_data = np.concatenate((total_data, l_ankle_z), axis=0)
 
