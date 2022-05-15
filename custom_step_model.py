@@ -222,11 +222,10 @@ class StepModel():
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
-        train_x, test_x, train_y, test_y = self.remove_outlier(train_x, test_x, train_y, test_y)
+        #train_x, test_x, train_y, test_y = self.remove_outlier(train_x, test_x, train_y, test_y)
         train_x, test_x = self.scale_data(train_x, test_x)
 
         train_x, val_x, train_y, val_y =  train_test_split(train_x, train_y, test_size=0.1, random_state=42)
-
 
         self.input_size = len(train_x[0])
 
