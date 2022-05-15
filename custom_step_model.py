@@ -123,7 +123,7 @@ class StepHyperModel(keras_tuner.HyperModel):
 
 class StepModel():
     def __init__(self) -> None:
-        self.epochs = 2000
+        self.epochs = 1000
         self.learning_rate = 1.46e-4
         #self.learning_rate = 0.0014829
         self.batch_size = 32
@@ -218,7 +218,7 @@ class StepModel():
                 data_list = np.concatenate((data_list,data), axis=0)
 
         x_data = data_list[:,3:]
-        y_data = data_list[:,0]
+        y_data = data_list[:,:3]
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
@@ -257,28 +257,28 @@ class StepModel():
     def build_cnn_model(self):
         print("==== building MODEL ====")
         model = Sequential()
-        model.add(Conv1D(filters=512, kernel_size=5, padding='same', activation='swish', input_shape=[self.input_size,1]))
+        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish', input_shape=[self.input_size,1]))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=512, kernel_size=5, padding='same', activation='swish'))
+        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=512, kernel_size=5, padding='same', activation='swish'))
+        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=512, kernel_size=5, padding='same', activation='swish'))
+        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
-        model.add(Dense(units=2048, activation='swish'))
+        model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=2048, activation='swish'))
+        model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=2048, activation='swish'))
+        model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(units=2048, activation='swish'))
+        model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(1, activation=None))
+        model.add(Dense(3, activation=None))
         model.summary()
 
         return model
@@ -301,11 +301,19 @@ class StepModel():
             
             # TRAIN LOOP with BATCH
             for step, (x_batch_train, y_batch_train) in enumerate(self.train_dataset):
-                with tf.GradientTape() as tape:
+                with tf.GradientTape() as step_tape:
                     logits = self.step_model(x_batch_train, training=True)
                     step_loss_value = self.step_loss(y_batch_train, logits)
+                    
+                grads = step_tape.gradient(step_loss_value, self.step_model.trainable_variables)
 
-                grads = tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                self.step_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+
+                with tf.GradientTape() as stride_tape:
+                    logits = self.step_model(x_batch_train, training=True)
+                    step_loss_value = self.step_loss(y_batch_train[:,0], logits[:,1]+logits[:,2])
+                    
+                grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
 
                 self.step_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
@@ -333,17 +341,17 @@ class StepModel():
         predict = predict.numpy()
 
         for i in range(len(self.test_y)):
-            print("real : ", self.test_y[i], " predict : " , predict[i])
+            print("real : ", self.test_y[i][0], " predict : " , predict[i][0])
 
         print("======= report ==========")
-        print("MAE: ",mean_absolute_error(y_true=self.test_y, y_pred=predict))
+        print("MAE: ",mean_absolute_error(y_true=self.test_y[:,0], y_pred=predict[:,0]))
         print("=========================")
-        print("ME: ", np.mean(np.subtract(self.test_y, predict)))
-        print("std: ", np.std(np.subtract(self.test_y, predict)))
+        print("ME: ", np.mean(np.subtract(self.test_y[:,0], predict[:,0])))
+        print("std: ", np.std(np.subtract(self.test_y[:,0], predict[:,0])))
         print("=========================")
-        print("mean relative error: ", np.mean(np.divide(np.absolute(np.subtract(self.test_y, predict)), self.test_y))*100)
+        print("mean relative error: ", np.mean(np.divide(np.absolute(np.subtract(self.test_y[:,0], predict[:,0])), self.test_y[:,0]))*100)
         print("=========================")        
-        print("r2 score: ", r2_score(y_true=self.test_y, y_pred=predict))
+        print("r2 score: ", r2_score(y_true=self.test_y[:,0], y_pred=predict[:,0]))
         print("=========================")
 
 if __name__ == '__main__':
