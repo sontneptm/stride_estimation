@@ -31,9 +31,9 @@ def setup_gpu():
 class StepHyperModel(keras_tuner.HyperModel):
     def build(self, hp):
         model = Sequential()
-        hp_filters = hp.Choice('filters', [ 64, 128, 256, 512])
-        hp_kernel = hp.Choice('kernel', [2, 3, 4, 5, 6, 7, 8])
-        model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish', input_shape=[612,1]))
+        hp_filters = hp.Choice('filters', [128, 256, 512])
+        hp_kernel = hp.Choice('kernel', [3, 4, 5, 6])
+        model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish', input_shape=[562,1]))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Conv1D(filters=hp_filters, kernel_size=hp_kernel, padding='same', activation='swish'))
@@ -46,7 +46,7 @@ class StepHyperModel(keras_tuner.HyperModel):
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
-        hp_units = hp.Choice('units', [1024])
+        hp_units = hp.Choice('units', [512, 1024, 2048])
         model.add(Dense(units=hp_units, activation='swish'))
         model.add(BN())
         model.add(Dense(units=hp_units, activation='swish'))
@@ -63,13 +63,13 @@ class StepHyperModel(keras_tuner.HyperModel):
     def fit(self, hp, model, x, y, validation_data,callbacks=None, **kwargs):
 
         #batch_size = hp.Int("batch_size", 32, 128, step=32, default=64)
-        batch_size = hp.Int("batch_size", 32, 64, step=1, default=64)
+        batch_size = hp.Choice('batch', [16, 32, 64])
         train_ds = tf.data.Dataset.from_tensor_slices((x, y)).batch(batch_size)
         validation_data = tf.data.Dataset.from_tensor_slices(validation_data).batch(batch_size)
         
         # Define the optimizer.
         #optimizer = Adam(hp.Float("learning_rate", 1e-4, 1e-2, sampling="log", default=1e-3))
-        optimizer = Adam(hp.Float("learning_rate", 1e-4, 1e-3, sampling="log", default=1e-3))
+        optimizer = Adam(hp.Float("learning_rate", 1e-4, 1e-2, sampling="log", default=1e-3))
         loss_fn = MSE()
         epoch_loss_metric = MSE_metrics()
 
@@ -125,7 +125,8 @@ class StepModel():
     def __init__(self) -> None:
         self.epochs = 2000
         self.learning_rate = 1.46e-4
-        self.batch_size = 64
+        #self.learning_rate = 0.0014829
+        self.batch_size = 32
         self.input_size = None
 
         self.train_dataset =None
@@ -151,7 +152,7 @@ class StepModel():
         self.tuner = keras_tuner.Hyperband(
             objective=keras_tuner.Objective("mse_metric", "min"),
             hypermodel=self.l_step_model,
-            hyperband_iterations=5,
+            hyperband_iterations=10,
             max_epochs=2000,
             factor=3,
             directory= 'results',
@@ -166,22 +167,19 @@ class StepModel():
         best_model = self.tuner.get_best_models()[0]
         best_model.summary()
 
-    def scale_data(self, train_data, val_data, test_data):
+    def scale_data(self, train_data, test_data):
         print("==== scaling DATA ====")
         
         #scaler = StandardScaler()
         #scaler = MinMaxScaler()
         scaler = RobustScaler()
 
-        total_data = np.concatenate((train_data, val_data), axis=0)
-
-        scaler.fit(total_data)
+        scaler.fit(train_data)
 
         train_data = scaler.transform(train_data)
-        val_data = scaler.transform(val_data)
         test_data = scaler.transform(test_data)
 
-        return train_data, val_data, test_data
+        return train_data, test_data
 
     def remove_outlier(self, train_x, test_x, train_y, test_y):
         clf = LOF(n_neighbors=20, contamination=0.1, novelty=True)
@@ -225,10 +223,10 @@ class StepModel():
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
         train_x, test_x, train_y, test_y = self.remove_outlier(train_x, test_x, train_y, test_y)
+        train_x, test_x = self.scale_data(train_x, test_x)
 
         train_x, val_x, train_y, val_y =  train_test_split(train_x, train_y, test_size=0.1, random_state=42)
 
-        train_x, val_x, test_x = self.scale_data(train_x, val_x, test_x)
 
         self.input_size = len(train_x[0])
 
@@ -260,16 +258,16 @@ class StepModel():
     def build_cnn_model(self):
         print("==== building MODEL ====")
         model = Sequential()
-        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish', input_shape=[self.input_size,1]))
+        model.add(Conv1D(filters=512, kernel_size=5, padding='same', activation='swish', input_shape=[self.input_size,1]))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
+        model.add(Conv1D(filters=512, kernel_size=5, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
+        model.add(Conv1D(filters=512, kernel_size=5, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
-        model.add(Conv1D(filters=512, kernel_size=4, padding='same', activation='swish'))
+        model.add(Conv1D(filters=512, kernel_size=5, padding='same', activation='swish'))
         model.add(BN())
         model.add(MaxPooling1D(pool_size=2))
         model.add(Flatten())
@@ -344,7 +342,7 @@ class StepModel():
         print("ME: ", np.mean(np.subtract(self.test_y, predict)))
         print("std: ", np.std(np.subtract(self.test_y, predict)))
         print("=========================")
-        print("relative error: ", np.mean(np.divide(np.absolute(np.subtract(self.test_y, predict)), self.test_y))*100)
+        print("mean relative error: ", np.mean(np.divide(np.absolute(np.subtract(self.test_y, predict)), self.test_y))*100)
         print("=========================")        
         print("r2 score: ", r2_score(y_true=self.test_y, y_pred=predict))
         print("=========================")

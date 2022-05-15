@@ -114,6 +114,8 @@ class Subject():
         last_t = self.change_str_to_time(l_time[l_pp_len-1])
 
         self.swing_t = swing_t
+        self.r_swing_start_t = r_swing_start_t
+        self.r_swing_end_t = r_swing_end_t
 
         stride_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - last_t))
         r_step_time = self.convert_timedelata_to_milisec(np.absolute(initial_contact_t - r_swing_end_t))
@@ -175,8 +177,17 @@ class Subject():
             l_ankle_swing_index, _ = self.find_index_by_time(type='l_ankle', s_time=self.swing_t, e_time=end_time)
             l_ankle_swing_index = l_ankle_swing_index - l_ankle_start_index     
 
-            l_ankle_end_index = l_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
-            r_ankle_end_index = r_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
+            r_ankle_swing_start_index, r_ankle_swing_end_index = self.find_index_by_time(type='r_ankle', s_time=self.r_swing_start_t, e_time=self.r_swing_end_t)
+            r_ankle_swing_start_index -= r_ankle_start_index
+            r_ankle_swing_end_index -= r_ankle_start_index
+
+            l_length = l_ankle_end_index - l_ankle_start_index
+            r_length = r_ankle_end_index - r_ankle_start_index
+            
+            if l_length > 50 or l_length < 35:
+                continue
+            if r_length > 50 or r_length < 35:
+                continue
 
             l_ankle_x = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,1]
             l_ankle_y = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,2]
@@ -214,24 +225,23 @@ class Subject():
 
                 r_svm.append(np.sqrt(np.power(x,2)+np.power(y,2)+np.power(z,2)))
 
-
-            if len(l_ankle_x) < 5 or len(l_ankle_x) > 30:
+            if len(l_ankle_x) < 10 or len(l_ankle_x) > 30:
                 continue
-            if len(r_ankle_x) < 5 or len(r_ankle_x) > 50:
+            if len(r_ankle_x) < 10 or len(r_ankle_x) > 50:
                 continue
-            else:
-                while (len(l_ankle_x)<30):
-                    l_ankle_x = np.append(l_ankle_x, 0)
-                    l_ankle_y = np.append(l_ankle_y, 0)
-                    l_ankle_z = np.append(l_ankle_z, 0)
-                    l_db_y = np.append(l_db_y, l_db_y[len(l_db_y)-1])
-                    l_svm = np.append(l_svm, 0)
+            
+            while (len(l_ankle_x)<30):
+                l_ankle_x = np.append(l_ankle_x, 0)
+                l_ankle_y = np.append(l_ankle_y, 0)
+                l_ankle_z = np.append(l_ankle_z, 0)
+                l_db_y = np.append(l_db_y, l_db_y[len(l_db_y)-1])
+                l_svm = np.append(l_svm, 0)
 
-                while (len(r_ankle_x)<50):
-                    r_ankle_x = np.append(r_ankle_x, 0)
-                    r_ankle_y = np.append(r_ankle_y, 0)
-                    r_ankle_z = np.append(r_ankle_z, 0)
-                    r_svm = np.append(r_svm, 0)
+            while (len(r_ankle_x)<50):
+                r_ankle_x = np.append(r_ankle_x, 0)
+                r_ankle_y = np.append(r_ankle_y, 0)
+                r_ankle_z = np.append(r_ankle_z, 0)
+                r_svm = np.append(r_svm, 0)
     
             while (len(l_pp_data)<125):
                 l_pp_data = np.append(l_pp_data, 0)
@@ -297,9 +307,11 @@ class Subject():
                 s_min_index = i
                 e_min = e_sub
                 e_min_index = i
+
             elif s_sub<s_min:
                 s_min = s_sub
                 s_min_index = i
+
             elif e_sub<e_min:
                 e_min = e_sub
                 e_min_index = i
