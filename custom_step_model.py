@@ -218,7 +218,8 @@ class StepModel():
                 data_list = np.concatenate((data_list,data), axis=0)
 
         x_data = data_list[:,3:]
-        y_data = data_list[:,:3]
+        y_data = data_list[:,:3] # Stride, r_step, l_step
+        #y_data = data_list[:,0] # Stride only
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
@@ -278,7 +279,7 @@ class StepModel():
         model.add(BN())
         model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(3, activation=None))
+        model.add(Dense(1, activation=None))
         model.summary()
 
         return model
@@ -286,6 +287,7 @@ class StepModel():
     def setup_optimizers(self):
         print("==== setting up OPT ====")
         self.step_optimizer = Adam(learning_rate=self.learning_rate)
+        self.stride_optimizer = Adam(learning_rate=self.learning_rate)
         self.step_loss = MSE()
 
     def setup_metrics(self):
@@ -309,20 +311,29 @@ class StepModel():
 
                 self.step_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
+                with tf.GradientTape() as real_stride_tape:
+                    logits = self.step_model(x_batch_train, training=True)
+                    step_loss_value = self.step_loss(logits[:,0], logits[:,1]+logits[:,2])
+                    
+                grads = real_stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+
+                self.stride_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+                
                 with tf.GradientTape() as stride_tape:
                     logits = self.step_model(x_batch_train, training=True)
                     step_loss_value = self.step_loss(y_batch_train[:,0], logits[:,1]+logits[:,2])
-                    
-                grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
 
-                self.step_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+                grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                self.stride_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+
 
             print("train loss : %.4f" % float(step_loss_value), end='\t')
 
             # VALIDATION LOOP with BATCH
             for x_batch_val, y_batch_val in self.val_dataset:
                 val_logits = self.step_model(x_batch_val, training=False)
-                self.val_acc_metric.update_state(y_batch_val, val_logits)
+                self.val_acc_metric.update_state(y_batch_val[:,0], val_logits[:,0])
+                #self.val_acc_metric.update_state(y_batch_val, val_logits)
 
             val_acc = self.val_acc_metric.result()
             self.val_acc_metric.reset_states()
@@ -335,23 +346,31 @@ class StepModel():
 
         print("Whole Time taken: %.2fs" % (time.time() - start_time))
 
-    def test(self):
+    def test(self, mode="norm"):
         predict = self.step_model(self.test_x)
     
         predict = predict.numpy()
 
+        if mode == "norm" :
+            y_true = self.test_y
+            y_pred = predict
+        elif mode == "zero":
+            y_true = self.test_y[:,0]
+            y_pred = predict[:,0]
+
         for i in range(len(self.test_y)):
-            print("real : ", self.test_y[i][0], " predict : " , predict[i][0])
+            print("real : ", y_true[i], " predict : " , y_pred[i])
+
 
         print("======= report ==========")
-        print("MAE: ",mean_absolute_error(y_true=self.test_y[:,0], y_pred=predict[:,0]))
+        print("MAE: ",mean_absolute_error(y_true=y_true, y_pred=y_pred))
         print("=========================")
-        print("ME: ", np.mean(np.subtract(self.test_y[:,0], predict[:,0])))
-        print("std: ", np.std(np.subtract(self.test_y[:,0], predict[:,0])))
+        print("ME: ", np.mean(np.subtract(y_true, y_pred)))
+        print("std: ", np.std(np.subtract(y_true, y_pred)))
         print("=========================")
-        print("mean relative error: ", np.mean(np.divide(np.absolute(np.subtract(self.test_y[:,0], predict[:,0])), self.test_y[:,0]))*100)
+        print("mean relative error: ", np.mean(np.divide(np.absolute(np.subtract(y_true, y_pred)), y_true))*100)
         print("=========================")        
-        print("r2 score: ", r2_score(y_true=self.test_y[:,0], y_pred=predict[:,0]))
+        print("r2 score: ", r2_score(y_true=y_true, y_pred=y_pred))
         print("=========================")
 
 if __name__ == '__main__':
@@ -359,4 +378,4 @@ if __name__ == '__main__':
     model = StepModel()
     # model.tune_model()
     model.train()
-    model.test()
+    model.test(mode="zero")
