@@ -4,6 +4,7 @@ from subprocess import call
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, BatchNormalization as BN
 from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten
@@ -146,6 +147,7 @@ class StepModel():
         self.tuner = None
 
         self.step_model = self.build_cnn_model()
+        plot_model(self.step_model, to_file='custom_step_model.png', show_shapes=True, show_layer_names=True)
         
     def tune_model(self):
         self.l_step_model = StepHyperModel()
@@ -279,7 +281,7 @@ class StepModel():
         model.add(BN())
         model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(1, activation=None))
+        model.add(Dense(3, activation=None))
         model.summary()
 
         return model
@@ -354,9 +356,15 @@ class StepModel():
         if mode == "norm" :
             y_true = self.test_y
             y_pred = predict
-        elif mode == "zero":
+        elif mode == "stride":
             y_true = self.test_y[:,0]
             y_pred = predict[:,0]
+        elif mode == "r_step":
+            y_true = self.test_y[:,1]
+            y_pred = predict[:1]
+        elif mode == "l_step":
+            y_true = self.test_y[:,2]
+            y_pred = predict[:,2]
 
         for i in range(len(self.test_y)):
             print("real : ", y_true[i], " predict : " , y_pred[i])
@@ -378,4 +386,4 @@ if __name__ == '__main__':
     model = StepModel()
     # model.tune_model()
     model.train()
-    model.test(mode="zero")
+    model.test(mode="l_step")

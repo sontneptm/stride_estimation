@@ -254,10 +254,10 @@ class Subject():
             total_data.append(r_step_length)
             total_data.append(l_step_length)
 
-            total_data = np.concatenate((total_data, gait_features), axis=0)
+            # total_data = np.concatenate((total_data, gait_features), axis=0)
 
-            total_data = np.concatenate((total_data, l_pp_data), axis=0)
-            total_data = np.concatenate((total_data, r_pp_data), axis=0)
+            # total_data = np.concatenate((total_data, l_pp_data), axis=0)
+            # total_data = np.concatenate((total_data, r_pp_data), axis=0)
             
             total_data = np.concatenate((total_data, l_db_y), axis=0)
 
