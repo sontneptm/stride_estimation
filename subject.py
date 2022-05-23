@@ -203,6 +203,7 @@ class Subject():
             l_ankle_z = self.moving_average(l_ankle_z, 5)
 
             sos = butter(10, 10, 'lowpass', fs=40, output='sos')
+            
             l_ankle_x = sosfilt(sos, l_ankle_x)
             l_ankle_y = sosfilt(sos, l_ankle_y)
             l_ankle_z = sosfilt(sos, l_ankle_z)
@@ -218,6 +219,14 @@ class Subject():
             r_ankle_x = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,1]
             r_ankle_y = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,2]
             r_ankle_z = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,3]
+            
+            r_ankle_x = self.moving_average(r_ankle_x, 5)
+            r_ankle_y = self.moving_average(r_ankle_y, 5)
+            r_ankle_z = self.moving_average(r_ankle_z, 5)
+
+            r_ankle_x = sosfilt(sos, r_ankle_x)
+            r_ankle_y = sosfilt(sos, r_ankle_y)
+            r_ankle_z = sosfilt(sos, r_ankle_z)
 
             l_svm = []
             r_svm = []
