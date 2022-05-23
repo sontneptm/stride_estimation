@@ -1,5 +1,6 @@
 from datetime import datetime
-from scipy.signal import find_peaks, butter
+from re import S
+from scipy.signal import find_peaks, butter, sosfilt
 from scipy.fft import fft
 from matplotlib import pyplot as plt
 import numpy as np
@@ -152,6 +153,13 @@ class Subject():
     def moving_average(self, data:np.ndarray, window_size) -> np.ndarray:
         return np.convolve(data, np.ones((window_size,)) / window_size, mode='same') 
 
+    def check_freq_window(self, data):
+        data_freq = fft(data)
+
+        plt.plot(data * 10)
+        plt.plot(data_freq)
+        plt.show()
+
     def save_as_one_stride(self):
         os.makedirs("stride_lab_data/processed_data/"+self.name, exist_ok=True)
 
@@ -190,37 +198,26 @@ class Subject():
             l_ankle_y = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,2]
             l_ankle_z = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,3]
 
-
-
-            # sos = butter(10, 15)
-            # l_ankle_x = 
-
             l_ankle_x = self.moving_average(l_ankle_x, 5)
             l_ankle_y = self.moving_average(l_ankle_y, 5)
             l_ankle_z = self.moving_average(l_ankle_z, 5)
 
-            l_ankle_y_for_db = l_ankle_y[l_ankle_swing_index:]
+            sos = butter(10, 10, 'lowpass', fs=40, output='sos')
+            l_ankle_x = sosfilt(sos, l_ankle_x)
+            l_ankle_y = sosfilt(sos, l_ankle_y)
+            l_ankle_z = sosfilt(sos, l_ankle_z)
+
             l_ankle_x = l_ankle_x[l_ankle_swing_index:]
             l_ankle_y = l_ankle_y[l_ankle_swing_index:]
             l_ankle_z = l_ankle_z[l_ankle_swing_index:]
-            
-            l_ankle_x_freq = fft(l_ankle_x)
 
-            plt.plot(l_ankle_x_freq)
-            plt.show()
+            # self.check_freq_window(l_ankle_x)
 
-            l_db_y = np.cumsum(np.cumsum(l_ankle_y_for_db))
+            l_db_y = np.cumsum(np.cumsum(l_ankle_y))
         
             r_ankle_x = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,1]
             r_ankle_y = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,2]
             r_ankle_z = self.r_ankle_data[r_ankle_start_index:r_ankle_end_index][:,3]
-            
-            # try:
-            #     r_ankle_x = r_ankle_x[r_ankle_swing_start_index:r_ankle_swing_end_index]
-            #     r_ankle_y = r_ankle_y[r_ankle_swing_start_index:r_ankle_swing_end_index]
-            #     r_ankle_z = r_ankle_z[r_ankle_swing_start_index:r_ankle_swing_end_index]
-            # except:
-            #     continue
 
             l_svm = []
             r_svm = []
@@ -285,7 +282,7 @@ class Subject():
             total_data = str(list(map(np.float32, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
 
-            # file.write(total_data+'\n')
+            file.write(total_data+'\n')
 
     def find_index_by_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data
