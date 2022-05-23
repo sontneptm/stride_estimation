@@ -1,5 +1,7 @@
 from datetime import datetime
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, butter
+from scipy.fft import fft
+from matplotlib import pyplot as plt
 import numpy as np
 import os
 
@@ -188,6 +190,11 @@ class Subject():
             l_ankle_y = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,2]
             l_ankle_z = self.l_ankle_data[l_ankle_start_index:l_ankle_end_index][:,3]
 
+
+
+            # sos = butter(10, 15)
+            # l_ankle_x = 
+
             l_ankle_x = self.moving_average(l_ankle_x, 5)
             l_ankle_y = self.moving_average(l_ankle_y, 5)
             l_ankle_z = self.moving_average(l_ankle_z, 5)
@@ -196,6 +203,11 @@ class Subject():
             l_ankle_x = l_ankle_x[l_ankle_swing_index:]
             l_ankle_y = l_ankle_y[l_ankle_swing_index:]
             l_ankle_z = l_ankle_z[l_ankle_swing_index:]
+            
+            l_ankle_x_freq = fft(l_ankle_x)
+
+            plt.plot(l_ankle_x_freq)
+            plt.show()
 
             l_db_y = np.cumsum(np.cumsum(l_ankle_y_for_db))
         
@@ -254,10 +266,10 @@ class Subject():
             total_data.append(r_step_length)
             total_data.append(l_step_length)
 
-            # total_data = np.concatenate((total_data, gait_features), axis=0)
+            total_data = np.concatenate((total_data, gait_features), axis=0)
 
-            # total_data = np.concatenate((total_data, l_pp_data), axis=0)
-            # total_data = np.concatenate((total_data, r_pp_data), axis=0)
+            total_data = np.concatenate((total_data, l_pp_data), axis=0)
+            total_data = np.concatenate((total_data, r_pp_data), axis=0)
             
             total_data = np.concatenate((total_data, l_db_y), axis=0)
 
@@ -273,7 +285,7 @@ class Subject():
             total_data = str(list(map(np.float32, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
 
-            file.write(total_data+'\n')
+            # file.write(total_data+'\n')
 
     def find_index_by_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data

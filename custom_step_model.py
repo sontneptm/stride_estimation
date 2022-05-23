@@ -124,7 +124,7 @@ class StepHyperModel(keras_tuner.HyperModel):
 
 class StepModel():
     def __init__(self) -> None:
-        self.epochs = 1000
+        self.epochs = 1500
         self.learning_rate = 1.46e-4
         #self.learning_rate = 0.0014829
         self.batch_size = 32
@@ -221,7 +221,9 @@ class StepModel():
 
         x_data = data_list[:,3:]
         y_data = data_list[:,:3] # Stride, r_step, l_step
-        #y_data = data_list[:,0] # Stride only
+        #
+        # y_data = data_list[:,0] # Stride only
+        #y_data = data_list[:,2] # l_step only
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
@@ -334,8 +336,9 @@ class StepModel():
             # VALIDATION LOOP with BATCH
             for x_batch_val, y_batch_val in self.val_dataset:
                 val_logits = self.step_model(x_batch_val, training=False)
-                self.val_acc_metric.update_state(y_batch_val[:,0], val_logits[:,0])
-                #self.val_acc_metric.update_state(y_batch_val, val_logits)
+                #self.val_acc_metric.update_state(y_batch_val[:,0], val_logits[:,0]) # stride
+                self.val_acc_metric.update_state(y_batch_val[:,2], val_logits[:,2]) # l_step
+                #self.val_acc_metric.update_state(y_batch_val, val_logits) # normal
 
             val_acc = self.val_acc_metric.result()
             self.val_acc_metric.reset_states()
@@ -369,9 +372,10 @@ class StepModel():
         for i in range(len(self.test_y)):
             print("real : ", y_true[i], " predict : " , y_pred[i])
 
-
-        print("======= report ==========")
+        print("======= ",mode ," report ==========")
         print("MAE: ",mean_absolute_error(y_true=y_true, y_pred=y_pred))
+        print("MAE2: ", np.mean(np.abs(y_true - y_pred)))
+        print("std: ", np.std(np.absolute(np.subtract(y_true, y_pred))))
         print("=========================")
         print("ME: ", np.mean(np.subtract(y_true, y_pred)))
         print("std: ", np.std(np.subtract(y_true, y_pred)))
@@ -386,4 +390,6 @@ if __name__ == '__main__':
     model = StepModel()
     # model.tune_model()
     model.train()
+    model.test(mode="stride")
     model.test(mode="l_step")
+    # model.test(mode="r_step")
