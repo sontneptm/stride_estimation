@@ -124,7 +124,7 @@ class StepHyperModel(keras_tuner.HyperModel):
 
 class StepModel():
     def __init__(self) -> None:
-        self.epochs = 1500
+        self.epochs = 1000
         self.learning_rate = 1.46e-4
         #self.learning_rate = 0.0014829
         self.batch_size = 32

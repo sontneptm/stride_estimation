@@ -202,8 +202,8 @@ class Subject():
             l_ankle_y = self.moving_average(l_ankle_y, 5)
             l_ankle_z = self.moving_average(l_ankle_z, 5)
 
-            sos = butter(10, 10, 'lowpass', fs=40, output='sos')
-            
+            sos = butter(10, 5, 'lowpass', fs=40, output='sos')
+
             l_ankle_x = sosfilt(sos, l_ankle_x)
             l_ankle_y = sosfilt(sos, l_ankle_y)
             l_ankle_z = sosfilt(sos, l_ankle_z)
