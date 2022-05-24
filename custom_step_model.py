@@ -135,7 +135,8 @@ class StepModel():
         self.test_dataset =None   
         self.load_dataset()
 
-        self.step_optimizer = None
+        self.fast_optimizer = None
+        self.slow_optimizer = None
         self.step_loss = None
         self.setup_optimizers()
 
@@ -289,8 +290,8 @@ class StepModel():
 
     def setup_optimizers(self):
         print("==== setting up OPT ====")
-        self.step_optimizer = Adam(learning_rate=self.learning_rate)
-        self.stride_optimizer = Adam(learning_rate=self.learning_rate)
+        self.fast_optimizer = Adam(learning_rate=self.learning_rate)
+        self.slow_optimizer = Adam(learning_rate=self.learning_rate/2)
         self.step_loss = MSE()
 
     def setup_metrics(self):
@@ -312,8 +313,7 @@ class StepModel():
                     # print("step 1", logits)
                     
                 grads = step_tape.gradient(step_loss_value, self.step_model.trainable_variables)
-
-                self.step_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+                self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
                 with tf.GradientTape() as real_stride_tape:
                     logits = self.step_model(x_batch_train, training=True)
@@ -321,18 +321,16 @@ class StepModel():
                     # print("step 2", logits)
                     
                 grads = real_stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
-                self.stride_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
-                
                 with tf.GradientTape() as stride_tape:
                     logits = self.step_model(x_batch_train, training=True)
                     step_loss_value = self.step_loss(y_batch_train[:,0], logits[:,1]+logits[:,2])
                     # print("step 3", logits)
 
                 grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
-                self.stride_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
-
-
+                self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+            
             print("train loss : %.4f" % float(step_loss_value), end='\t')
 
             # VALIDATION LOOP with BATCH
@@ -393,5 +391,5 @@ if __name__ == '__main__':
     # model.tune_model()
     model.train()
     model.test(mode="stride")
-    model.test(mode="l_step")
     model.test(mode="r_step")
+    model.test(mode="l_step")
