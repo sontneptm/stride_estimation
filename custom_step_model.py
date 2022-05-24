@@ -221,7 +221,6 @@ class StepModel():
 
         x_data = data_list[:,3:]
         y_data = data_list[:,:3] # Stride, r_step, l_step
-        #
         # y_data = data_list[:,0] # Stride only
         #y_data = data_list[:,2] # l_step only
 
@@ -310,6 +309,7 @@ class StepModel():
                 with tf.GradientTape() as step_tape:
                     logits = self.step_model(x_batch_train, training=True)
                     step_loss_value = self.step_loss(y_batch_train, logits)
+                    # print("step 1", logits)
                     
                 grads = step_tape.gradient(step_loss_value, self.step_model.trainable_variables)
 
@@ -318,6 +318,7 @@ class StepModel():
                 with tf.GradientTape() as real_stride_tape:
                     logits = self.step_model(x_batch_train, training=True)
                     step_loss_value = self.step_loss(logits[:,0], logits[:,1]+logits[:,2])
+                    # print("step 2", logits)
                     
                 grads = real_stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
 
@@ -326,6 +327,7 @@ class StepModel():
                 with tf.GradientTape() as stride_tape:
                     logits = self.step_model(x_batch_train, training=True)
                     step_loss_value = self.step_loss(y_batch_train[:,0], logits[:,1]+logits[:,2])
+                    # print("step 3", logits)
 
                 grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
                 self.stride_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
@@ -364,7 +366,7 @@ class StepModel():
             y_pred = predict[:,0]
         elif mode == "r_step":
             y_true = self.test_y[:,1]
-            y_pred = predict[:1]
+            y_pred = predict[:,1]
         elif mode == "l_step":
             y_true = self.test_y[:,2]
             y_pred = predict[:,2]
@@ -392,4 +394,4 @@ if __name__ == '__main__':
     model.train()
     model.test(mode="stride")
     model.test(mode="l_step")
-    # model.test(mode="r_step")
+    model.test(mode="r_step")
