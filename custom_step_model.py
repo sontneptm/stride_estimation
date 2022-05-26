@@ -1,6 +1,3 @@
-from distutils.log import fatal
-from msilib.schema import Directory
-from subprocess import call
 import tensorflow as tf
 import pandas as pd
 import numpy as np
@@ -123,7 +120,7 @@ class StepHyperModel(keras_tuner.HyperModel):
         return best_epoch_loss
 
 class StepModel():
-    def __init__(self) -> None:
+    def __init__(self, load_mode="random", loso_sub_name=None) -> None:
         self.epochs = 1000
         self.learning_rate = 1.46e-4
         #self.learning_rate = 0.0014829
@@ -133,7 +130,7 @@ class StepModel():
         self.train_dataset =None
         self.val_dataset =None
         self.test_dataset =None   
-        self.load_dataset()
+        self.load_dataset(mode=load_mode, sub_name=loso_sub_name)
 
         self.fast_optimizer = None
         self.slow_optimizer = None
@@ -185,7 +182,7 @@ class StepModel():
         return train_data, test_data
 
     def remove_outlier(self, train_x, test_x, train_y, test_y):
-        clf = LOF(n_neighbors=20, contamination=0.1, novelty=True)
+        clf = LOF(n_neighbors=20, contamination=0.05, novelty=True)
         clf.fit(train_x)
         train_pred = clf.predict(train_x)
         test_pred = clf.predict(test_x)
@@ -207,25 +204,34 @@ class StepModel():
 
         return np.array(rtn_train_x), np.array(rtn_test_x), np.array(rtn_train_y), np.array(rtn_test_y)
         
-    def load_dataset(self):
+    def load_dataset(self, sub_name:str, mode  = "random"):
         print("==== loading DATA ====")
         data_path_list = glob('./stride_lab_data/processed_data/*/*')
 
         data_list=None
+        test_list=None
 
         for path in data_path_list:
             data = pd.read_csv(path).to_numpy()
+
+            if (mode == "loso") and (sub_name in path):
+                test_list = data
+                continue
+
             if data_list is None: 
                 data_list = data
             else: 
                 data_list = np.concatenate((data_list,data), axis=0)
 
-        x_data = data_list[:,3:]
-        y_data = data_list[:,:3] # Stride, r_step, l_step
-        # y_data = data_list[:,0] # Stride only
-        #y_data = data_list[:,2] # l_step only
-
-        train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
+        if mode == "random":
+            x_data = data_list[:,3:]
+            y_data = data_list[:,:3] # Stride, r_step, l_step
+            train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
+        elif mode == "loso":
+            train_x = data_list[:,3:] 
+            train_y = data_list[:,:3] 
+            test_x = test_list[:,3:] 
+            test_y = test_list[:,:3] 
 
         train_x, test_x, train_y, test_y = self.remove_outlier(train_x, test_x, train_y, test_y)
         train_x, test_x = self.scale_data(train_x, test_x)
@@ -316,13 +322,13 @@ class StepModel():
                 self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
 
-                with tf.GradientTape() as stride_tape:
-                    logits = self.step_model(x_batch_train, training=True)
-                    step_loss_value = self.step_loss(y_batch_train[:,0], logits[:,1]+logits[:,2])
-                    # print("step 3", logits)
+                # with tf.GradientTape() as stride_tape:
+                #     logits = self.step_model(x_batch_train, training=True)
+                #     step_loss_value = self.step_loss(y_batch_train[:,0], logits[:,1]+logits[:,2])
+                #     # print("step 3", logits)
 
-                grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
-                self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+                # grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                # self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
                 # with tf.GradientTape() as real_stride_tape:
                 #     logits = self.step_model(x_batch_train, training=True)
@@ -388,7 +394,7 @@ class StepModel():
 
 if __name__ == '__main__':
     setup_gpu()
-    model = StepModel()
+    model = StepModel(load_mode="loso", loso_sub_name="정승민")
     # model.tune_model()
     model.train()
     model.test(mode="stride")

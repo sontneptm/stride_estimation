@@ -277,15 +277,15 @@ class Subject():
             total_data = np.concatenate((total_data, l_pp_data), axis=0)
             total_data = np.concatenate((total_data, r_pp_data), axis=0)
             
-            total_data = np.concatenate((total_data, l_db_y), axis=0)
+            # total_data = np.concatenate((total_data, l_db_y), axis=0)
 
-            total_data = np.concatenate((total_data, l_ankle_z), axis=0)
-            total_data = np.concatenate((total_data, l_ankle_y), axis=0)
-            total_data = np.concatenate((total_data, l_ankle_z), axis=0)
+            # total_data = np.concatenate((total_data, l_ankle_z), axis=0)
+            # total_data = np.concatenate((total_data, l_ankle_y), axis=0)
+            # total_data = np.concatenate((total_data, l_ankle_z), axis=0)
 
-            total_data = np.concatenate((total_data, r_ankle_x), axis=0)
-            total_data = np.concatenate((total_data, r_ankle_y), axis=0)
-            total_data = np.concatenate((total_data, r_ankle_z), axis=0)
+            # total_data = np.concatenate((total_data, r_ankle_x), axis=0)
+            # total_data = np.concatenate((total_data, r_ankle_y), axis=0)
+            # total_data = np.concatenate((total_data, r_ankle_z), axis=0)
 
             total_data = str(total_data)[1:-1].split()
             total_data = str(list(map(np.float32, total_data)))[1:-1]
