@@ -321,22 +321,22 @@ class StepModel():
                 grads = step_tape.gradient(step_loss_value, self.step_model.trainable_variables)
                 self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
-
-                # with tf.GradientTape() as stride_tape:
-                #     logits = self.step_model(x_batch_train, training=True)
-                #     step_loss_value = self.step_loss(y_batch_train[:,0], logits[:,1]+logits[:,2])
-                #     # print("step 3", logits)
-
-                # grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
-                # self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+                with tf.GradientTape() as stride_tape:
+                    logits = self.step_model(x_batch_train, training=True)
+                    step_loss_value = self.step_loss(y_batch_train[:,0], logits[:,1]+logits[:,2])
+                    # print("step 3", logits)
+                    
+                grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
                 # with tf.GradientTape() as real_stride_tape:
                 #     logits = self.step_model(x_batch_train, training=True)
-                #     step_loss_value = self.step_loss()
+                #     step_loss_value = self.step_loss(logits[:,0], logits[:,1]+logits[:,2])
                 #     # print("step 2", logits)
-                    
+
                 # grads = real_stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
                 # self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+
             
             print("train loss : %.4f" % float(step_loss_value), end='\t')
 
