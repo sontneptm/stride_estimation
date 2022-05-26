@@ -17,6 +17,26 @@ import keras_tuner
 from glob import glob
 import time
 
+male_list=[
+    "곽흠",
+    "김인경",
+    "노시헌",
+    "민세동",
+    "이경준",
+    "장승완",
+    "정승민",
+    "최진성",
+]
+female_list=[
+    "공예은",
+    "녕설리",
+    "원혜연",
+    "이서영",
+    "이수빈",
+    "이현영",
+    "정아현",
+]
+
 def setup_gpu():
     print("==== setting up GPU ====")
     gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -120,7 +140,7 @@ class StepHyperModel(keras_tuner.HyperModel):
         return best_epoch_loss
 
 class StepModel():
-    def __init__(self, load_mode="random", loso_sub_name=None) -> None:
+    def __init__(self, load_mode="random", target="whole",loso_sub_name=None) -> None:
         self.epochs = 1000
         self.learning_rate = 1.46e-4
         #self.learning_rate = 0.0014829
@@ -130,7 +150,7 @@ class StepModel():
         self.train_dataset =None
         self.val_dataset =None
         self.test_dataset =None   
-        self.load_dataset(mode=load_mode, sub_name=loso_sub_name)
+        self.load_dataset(mode=load_mode, sub_name=loso_sub_name, target= target)
 
         self.fast_optimizer = None
         self.slow_optimizer = None
@@ -204,9 +224,27 @@ class StepModel():
 
         return np.array(rtn_train_x), np.array(rtn_test_x), np.array(rtn_train_y), np.array(rtn_test_y)
         
-    def load_dataset(self, sub_name:str, mode  = "random"):
+    def load_dataset(self, sub_name:str, mode  = "random", target = "whole"):
         print("==== loading DATA ====")
-        data_path_list = glob('./stride_lab_data/processed_data/*/*')
+        
+        data_path_list = None
+        
+        if target == "whole":
+            data_path_list = glob('./stride_lab_data/processed_data/*/*')
+        elif target == "male":
+            for male in male_list:
+                tmp_path = glob('./stride_lab_data/processed_data/' + male +"/*")
+                if data_path_list is None :
+                    data_path_list = tmp_path
+                elif data_path_list is not None :
+                    data_path_list.append(tmp_path[0])
+        elif target == "female":
+            for female in female_list:
+                tmp_path = glob('./stride_lab_data/processed_data/' + female +"/*")
+                if data_path_list is None :
+                    data_path_list = tmp_path
+                elif data_path_list is not None :
+                    data_path_list.append(tmp_path[0])
 
         data_list=None
         test_list=None
@@ -313,12 +351,13 @@ class StepModel():
             
             # TRAIN LOOP with BATCH
             for step, (x_batch_train, y_batch_train) in enumerate(self.train_dataset):
-                with tf.GradientTape() as step_tape:
+
+                with tf.GradientTape() as real_stride_tape:
                     logits = self.step_model(x_batch_train, training=True)
-                    step_loss_value = self.step_loss(y_batch_train, logits)
-                    # print("step 1", logits)
-                    
-                grads = step_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                    step_loss_value = self.step_loss(logits[:,0], logits[:,1]+logits[:,2])
+                    # print("step 2", logits)
+
+                grads = real_stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
                 self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
                 with tf.GradientTape() as stride_tape:
@@ -328,23 +367,23 @@ class StepModel():
                     
                 grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
                 self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+                
+                with tf.GradientTape() as step_tape:
+                    logits = self.step_model(x_batch_train, training=True)
+                    step_loss_value = self.step_loss(y_batch_train, logits)
+                    # print("step 1", logits)
+                    
+                grads = step_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
-                # with tf.GradientTape() as real_stride_tape:
-                #     logits = self.step_model(x_batch_train, training=True)
-                #     step_loss_value = self.step_loss(logits[:,0], logits[:,1]+logits[:,2])
-                #     # print("step 2", logits)
 
-                # grads = real_stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
-                # self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
-
-            
             print("train loss : %.4f" % float(step_loss_value), end='\t')
 
             # VALIDATION LOOP with BATCH
             for x_batch_val, y_batch_val in self.val_dataset:
                 val_logits = self.step_model(x_batch_val, training=False)
-                #self.val_acc_metric.update_state(y_batch_val[:,0], val_logits[:,0]) # stride
-                self.val_acc_metric.update_state(y_batch_val[:,2], val_logits[:,2]) # l_step
+                self.val_acc_metric.update_state(y_batch_val[:,0], val_logits[:,0]) # stride
+                #self.val_acc_metric.update_state(y_batch_val[:,2], val_logits[:,2]) # l_step
                 #self.val_acc_metric.update_state(y_batch_val, val_logits) # normal
 
             val_acc = self.val_acc_metric.result()
@@ -394,7 +433,7 @@ class StepModel():
 
 if __name__ == '__main__':
     setup_gpu()
-    model = StepModel(load_mode="loso", loso_sub_name="정승민")
+    model = StepModel(load_mode="random", target="whole",loso_sub_name="정승민")
     # model.tune_model()
     model.train()
     model.test(mode="stride")
