@@ -167,6 +167,7 @@ class Subject():
 
         for info in self.stride_info:
             total_data = []
+            walking_speed = None
             stride_length = info[2]
             r_step_length = info[3]
             l_step_length = info[4]
@@ -268,6 +269,7 @@ class Subject():
             while (len(r_pp_data)<125):
                 r_pp_data = np.append(r_pp_data, 0)
 
+            total_data.append(walking_speed)
             total_data.append(stride_length)
             total_data.append(r_step_length)
             total_data.append(l_step_length)
