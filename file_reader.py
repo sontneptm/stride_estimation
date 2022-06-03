@@ -21,8 +21,6 @@ def read_files():
             elif "4" in file: acc_type = 'l_ankle'
             elif "5" in file: acc_type = 'r_ankle'
             acc_data = pd.read_csv(file, header=None)
-
-            print("guri")
             
             subject.set_acc(acc_data, acc_type=acc_type)
 
