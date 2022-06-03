@@ -262,14 +262,14 @@ class StepModel():
                 data_list = np.concatenate((data_list,data), axis=0)
 
         if mode == "random":
-            x_data = data_list[:,3:]
-            y_data = data_list[:,:3] # Stride, r_step, l_step
+            x_data = data_list[:,4:]
+            y_data = data_list[:,:4] # walking_speed, Stride, r_step, l_step
             train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
         elif mode == "loso":
-            train_x = data_list[:,3:] 
-            train_y = data_list[:,:3] 
-            test_x = test_list[:,3:] 
-            test_y = test_list[:,:3] 
+            train_x = data_list[:,4:] 
+            train_y = data_list[:,:4] 
+            test_x = test_list[:,4:] 
+            test_y = test_list[:,:4] 
 
         train_x, test_x, train_y, test_y = self.remove_outlier(train_x, test_x, train_y, test_y)
         train_x, test_x = self.scale_data(train_x, test_x)
@@ -327,7 +327,7 @@ class StepModel():
         model.add(BN())
         model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(3, activation=None))
+        model.add(Dense(4, activation=None))
         model.summary()
 
         return model
@@ -351,23 +351,6 @@ class StepModel():
             
             # TRAIN LOOP with BATCH
             for step, (x_batch_train, y_batch_train) in enumerate(self.train_dataset):
-
-                with tf.GradientTape() as real_stride_tape:
-                    logits = self.step_model(x_batch_train, training=True)
-                    step_loss_value = self.step_loss(logits[:,0], logits[:,1]+logits[:,2])
-                    # print("step 2", logits)
-
-                grads = real_stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
-                self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
-
-                with tf.GradientTape() as stride_tape:
-                    logits = self.step_model(x_batch_train, training=True)
-                    step_loss_value = self.step_loss(y_batch_train[:,0], logits[:,1]+logits[:,2])
-                    # print("step 3", logits)
-                    
-                grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
-                self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
-                
                 with tf.GradientTape() as step_tape:
                     logits = self.step_model(x_batch_train, training=True)
                     step_loss_value = self.step_loss(y_batch_train, logits)
@@ -376,13 +359,28 @@ class StepModel():
                 grads = step_tape.gradient(step_loss_value, self.step_model.trainable_variables)
                 self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
+                # with tf.GradientTape() as real_stride_tape:
+                #     logits = self.step_model(x_batch_train, training=True)
+                #     step_loss_value = self.step_loss(logits[:,1], logits[:,2]+logits[:,3])
+                #     # print("step 2", logits)
 
+                # grads = real_stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                # self.slow_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+
+                # with tf.GradientTape() as stride_tape:
+                #     logits = self.step_model(x_batch_train, training=True)
+                #     step_loss_value = self.step_loss(y_batch_train[:,1], logits[:,2]+logits[:,3])
+                #     # print("step 3", logits)
+                    
+                # grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                # self.slow_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+                
             print("train loss : %.4f" % float(step_loss_value), end='\t')
 
             # VALIDATION LOOP with BATCH
             for x_batch_val, y_batch_val in self.val_dataset:
                 val_logits = self.step_model(x_batch_val, training=False)
-                self.val_acc_metric.update_state(y_batch_val[:,0], val_logits[:,0]) # stride
+                self.val_acc_metric.update_state(y_batch_val[:,0], val_logits[:,0]) # walking speed
                 #self.val_acc_metric.update_state(y_batch_val[:,2], val_logits[:,2]) # l_step
                 #self.val_acc_metric.update_state(y_batch_val, val_logits) # normal
 
@@ -398,22 +396,25 @@ class StepModel():
         print("Whole Time taken: %.2fs" % (time.time() - start_time))
 
     def test(self, mode="norm"):
-        predict = self.step_model(self.test_x)
+        predict = self.step_model(self.test_x, training=False)
     
         predict = predict.numpy()
 
         if mode == "norm" :
             y_true = self.test_y
             y_pred = predict
-        elif mode == "stride":
+        elif mode == "walking_speed":
             y_true = self.test_y[:,0]
             y_pred = predict[:,0]
-        elif mode == "r_step":
+        elif mode == "stride":
             y_true = self.test_y[:,1]
             y_pred = predict[:,1]
-        elif mode == "l_step":
+        elif mode == "r_step":
             y_true = self.test_y[:,2]
             y_pred = predict[:,2]
+        elif mode == "l_step":
+            y_true = self.test_y[:,3]
+            y_pred = predict[:,3]
 
         for i in range(len(self.test_y)):
             print("real : ", y_true[i], " predict : " , y_pred[i])
@@ -436,6 +437,7 @@ if __name__ == '__main__':
     model = StepModel(load_mode="random", target="whole",loso_sub_name="정승민")
     # model.tune_model()
     model.train()
+    model.test(mode="walking_speed")
     model.test(mode="stride")
     model.test(mode="r_step")
     model.test(mode="l_step")
