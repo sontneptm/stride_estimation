@@ -160,6 +160,38 @@ class Subject():
         plt.plot(data_freq)
         plt.show()
 
+    def get_sliced_acc(self, start_idx, end_idx, swing_idx, type="l_ankle"):
+        target_data = None  
+        if type == "l_ankle":   
+            target_data = self.l_ankle_data
+        elif type == "r_ankle":   
+            target_data = self.r_ankle_data
+        elif type == "l_wrist":   
+            target_data = self.l_wrist_data
+        elif type == "r_wrist":   
+            target_data = self.r_wrist_data
+
+        l_ankle_x = target_data[start_idx:end_idx][:,1]
+        l_ankle_y = target_data[start_idx:end_idx][:,2]
+        l_ankle_z = target_data[start_idx:end_idx][:,3]
+
+        l_ankle_x = self.moving_average(l_ankle_x, 5)
+        l_ankle_y = self.moving_average(l_ankle_y, 5)
+        l_ankle_z = self.moving_average(l_ankle_z, 5)
+
+        sos = butter(10, 10, 'lowpass', fs=40, output='sos')
+
+        l_ankle_x = sosfilt(sos, l_ankle_x)
+        l_ankle_y = sosfilt(sos, l_ankle_y)
+        l_ankle_z = sosfilt(sos, l_ankle_z)
+
+        # get rid of acc in swing phase
+        l_ankle_x = l_ankle_x[swing_idx:]
+        l_ankle_y = l_ankle_y[swing_idx:]
+        l_ankle_z = l_ankle_z[swing_idx:]
+
+        return l_ankle_x, l_ankle_y, l_ankle_z
+
     def save_as_one_stride(self):
         os.makedirs("stride_lab_data/processed_data/"+self.name, exist_ok=True)
 
