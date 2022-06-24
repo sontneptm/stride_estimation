@@ -347,7 +347,7 @@ class StepModel():
         start_time = time.time()
         for epoch in range(self.epochs):
             print("epoch " , epoch, end=" -> ")
-            epoch_time = time.time()
+            epoch_time = time.time() 
             
             # TRAIN LOOP with BATCH
             for step, (x_batch_train, y_batch_train) in enumerate(self.train_dataset):
