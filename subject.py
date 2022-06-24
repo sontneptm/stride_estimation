@@ -193,10 +193,20 @@ class Subject():
 
         return acc_x, acc_y, acc_z
 
+    def get_svm(self, acc_x, acc_y, acc_z):
+        rtn_svm = []
+
+        def get_root_square(x,y,z):
+            return np.sqrt(np.power(x,2)+np.power(y,2)+np.power(z,2))
+        
+        rtn_svm = list(map(get_root_square, acc_x, acc_y, acc_z))
+
+        return rtn_svm
+
     def save_as_one_stride(self):
         os.makedirs("stride_lab_data/processed_data/"+self.name, exist_ok=True)
 
-        file = open("stride_lab_data/processed_data/"+self.name+"/pp_data.csv", 'a')
+        file = open("stride_lab_data/processed_data/"+self.name+"/processed_data.csv", 'a')
 
         for info in self.stride_info:
             total_data = []
@@ -233,30 +243,21 @@ class Subject():
 
             r_ankle_swing_start_index, r_ankle_swing_end_index = self.find_index_by_time(type='r_ankle', s_time=self.r_swing_start_t, e_time=self.r_swing_end_t)
             r_ankle_swing_start_index -= r_ankle_start_index
-            r_ankle_swing_end_index -= r_ankle_start_index
+            r_ankle_swing_end_index -= r_ankle_end_index
 
-            l_ankle_x, l_ankle_y, l_ankle_z = self.get_sliced_acc(l_ankle_start_index, l_ankle_end_index, l_ankle_swing_index, type="l_ankle")
-            r_ankle_x, r_ankle_y, r_ankle_z = self.get_sliced_acc(r_ankle_start_index, r_ankle_end_index, type="l_ankle")
+            l_ankle_x, l_ankle_y, l_ankle_z = self.get_sliced_acc(l_ankle_start_index, l_ankle_end_index, swing_idx=l_ankle_swing_index, type="l_ankle")
+            r_ankle_x, r_ankle_y, r_ankle_z = self.get_sliced_acc(r_ankle_start_index, r_ankle_end_index, type="r_ankle")
+            #TODO r_ankle acc도 right foot swing phase 구간으로 잘라야함
+            l_wrist_x, l_wrist_y, l_wrist_z = self.get_sliced_acc(l_wrist_start_index, l_wrist_end_index, type="l_wrist")
+            r_wrist_x, r_wrist_y, r_wrist_z = self.get_sliced_acc(r_wrist_start_index, r_wrist_end_index, type="r_wrist")
             
             # self.check_freq_window(l_ankle_x)
             l_db_y = np.cumsum(np.cumsum(l_ankle_y))
         
-            l_svm = []
-            r_svm = []
-            
-            for i in range(len(l_ankle_x)):
-                x = l_ankle_x[i]
-                y = l_ankle_y[i]
-                z = l_ankle_z[i]
-
-                l_svm.append(np.sqrt(np.power(x,2)+np.power(y,2)+np.power(z,2)))
-
-            for i in range(len(r_ankle_x)):
-                x = r_ankle_x[i]
-                y = r_ankle_y[i]
-                z = r_ankle_z[i]
-
-                r_svm.append(np.sqrt(np.power(x,2)+np.power(y,2)+np.power(z,2)))
+            l_ankle_svm = self.get_svm(l_ankle_x,l_ankle_y,l_ankle_z)
+            r_ankle_svm = self.get_svm(r_ankle_x,r_ankle_y,r_ankle_z)
+            l_wrist_svm = self.get_svm(l_wrist_x,l_wrist_y,l_wrist_z)
+            r_wrist_svm = self.get_svm(r_wrist_x,r_wrist_y,r_wrist_z)
 
             if len(l_ankle_x) < 5 or len(l_ankle_x) > 30:
                 continue
@@ -267,13 +268,25 @@ class Subject():
                 l_ankle_y = np.append(l_ankle_y, 0)
                 l_ankle_z = np.append(l_ankle_z, 0)
                 l_db_y = np.append(l_db_y, l_db_y[len(l_db_y)-1])
-                l_svm = np.append(l_svm,0)
+                l_ankle_svm = np.append(l_ankle_svm,0)
 
             while (len(r_ankle_x)<50):
                 r_ankle_x = np.append(r_ankle_x, 0)
                 r_ankle_y = np.append(r_ankle_y, 0)
                 r_ankle_z = np.append(r_ankle_z, 0)
-                r_svm = np.append(r_svm, 0)
+                r_ankle_svm = np.append(r_ankle_svm, 0)
+
+            while (len(l_wrist_x)<50):
+                l_wrist_x = np.append(l_wrist_x, 0)
+                l_wrist_y = np.append(l_wrist_y, 0)
+                l_wrist_z = np.append(l_wrist_z, 0)
+                l_wrist_svm = np.append(l_wrist_svm, 0)
+
+            while (len(r_wrist_x)<50):
+                r_wrist_x = np.append(r_wrist_x, 0)
+                r_wrist_y = np.append(r_wrist_y, 0)
+                r_wrist_z = np.append(r_wrist_z, 0)
+                r_wrist_svm = np.append(r_wrist_svm, 0)
     
             while (len(l_pp_data)<125):
                 l_pp_data = np.append(l_pp_data, 0)
@@ -301,6 +314,14 @@ class Subject():
             total_data = np.concatenate((total_data, r_ankle_y), axis=0)
             total_data = np.concatenate((total_data, r_ankle_z), axis=0)
 
+            total_data = np.concatenate((total_data, l_wrist_x), axis=0)
+            total_data = np.concatenate((total_data, l_wrist_y), axis=0)
+            total_data = np.concatenate((total_data, l_wrist_z), axis=0)
+            
+            total_data = np.concatenate((total_data, r_wrist_x), axis=0)
+            total_data = np.concatenate((total_data, r_wrist_y), axis=0)
+            total_data = np.concatenate((total_data, r_wrist_z), axis=0)
+
             total_data = str(total_data)[1:-1].split()
             total_data = str(list(map(np.float32, total_data)))[1:-1]
             total_data = total_data.replace(" ", "")
@@ -310,6 +331,8 @@ class Subject():
     def find_index_by_time(self, type, s_time, e_time):
         if type == 'l_ankle': target=self.l_ankle_data
         elif type == 'r_ankle': target=self.r_ankle_data
+        elif type == 'l_wrist': target=self.l_wrist_data
+        elif type == 'r_wrist': target=self.r_wrist_data
         elif type == 'r_pp': target=self.r_plantar_pressure
 
         s_min = None
