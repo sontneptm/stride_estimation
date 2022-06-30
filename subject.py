@@ -39,13 +39,18 @@ class Subject():
     def convert_timedelata_to_milisec(self, delta):
         return (delta.microseconds/1000) + (delta.seconds*1000)
 
-    def find_stride_split_index(self):
+    def find_stride_split_index(self, type="left"):
         self.stride_split_index=[]
 
         step_flag = False
 
-        for i in range(len(self.l_plantar_pressure)):
-            pp_value = self.l_plantar_pressure[i][1]
+        target = self.l_plantar_pressure
+        
+        if type == 'right':
+            target = self.r_plantar_pressure
+
+        for i in range(len(target)):
+            pp_value = target[i][1]
 
             if pp_value < 100 and not step_flag:
                 step_flag=True
