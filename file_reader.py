@@ -49,5 +49,5 @@ if __name__ == '__main__':
     subject_list = read_files()
     
     for subject in subject_list:
-        if subject.name == "공예은":
+        if subject.name == "이수빈":
             subject.find_stride_split_index(type="right")

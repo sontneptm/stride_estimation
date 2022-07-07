@@ -52,9 +52,9 @@ class Subject():
         for i in range(len(target)):
             pp_value = target[i][1]
 
-            if pp_value < 100 and not step_flag:
+            if pp_value < 200 and not step_flag:
                 step_flag=True
-            elif pp_value > 100 and step_flag:
+            elif pp_value > 200 and step_flag:
                 step_flag=False
                 self.stride_split_index.append(i)
 
