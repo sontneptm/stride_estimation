@@ -215,14 +215,16 @@ class Subject():
 
         file = open("stride_lab_data/processed_data/"+self.name+"/processed_data.csv", 'a')
 
-        target_info = None
-        target_pp = None
-
         if type == "left" : 
             target_info = self.l_stride_info
             target_pp = self.l_plantar_pressure
             opposite_pp = self.r_plantar_pressure
-        elif type == "right" : target_info = self.r_stride_info
+            oppo_type = "r_pp"
+        elif type == "right" : 
+            target_info = self.r_stride_info
+            target_pp = self.r_plantar_pressure
+            opposite_pp = self.l_plantar_pressure
+            oppo_type = "l_pp"
 
         for info in target_info:
             total_data = []
@@ -231,30 +233,30 @@ class Subject():
             r_step_length = info[3]
             l_step_length = info[4]
 
-            start_time = self.change_str_to_time(target_pp[info[0]][0])
-            end_time = self.change_str_to_time(target_pp[info[1]][0])
+            target_start_time = self.change_str_to_time(target_pp[info[0]][0])
+            target_end_time = self.change_str_to_time(target_pp[info[1]][0])
             
-            r_pp_start_index, r_pp_end_index = self.find_index_by_time(type='r_pp', s_time=start_time, e_time=end_time)
+            oppo_pp_start_idx, oppo_pp_end_idx = self.find_index_by_time(type=oppo_type, s_time=target_start_time, e_time=target_end_time)
 
-            l_pp_data = target_pp[info[0]:info[1]][:,1]
-            r_pp_data = opposite_pp[r_pp_start_index:r_pp_end_index][:,1]
+            target_pp_data = target_pp[info[0]:info[1]][:,1]
+            oppo_pp_data = opposite_pp[oppo_pp_start_idx:oppo_pp_end_idx][:,1]
 
-            gait_features = self.extract_gait_features(target_pp[info[0]:info[1]], opposite_pp[r_pp_start_index:r_pp_end_index])
+            gait_features = self.extract_gait_features(target_pp[info[0]:info[1]], opposite_pp[oppo_pp_start_idx:oppo_pp_end_idx])
 
             walking_speed = stride_length/(gait_features[0]/1000.0)
 
             # 전체 가속도 데이터에서 한 stride에 해당하는 부분 slice
-            l_ankle_start_index, l_ankle_end_index = self.find_index_by_time(type='l_ankle', s_time=start_time, e_time=end_time)
-            r_ankle_start_index, r_ankle_end_index = self.find_index_by_time(type='r_ankle', s_time=start_time, e_time=end_time)
-            l_wrist_start_index, l_wrist_end_index = self.find_index_by_time(type='l_wrist', s_time=start_time, e_time=end_time)
-            r_wrist_start_index, r_wrist_end_index = self.find_index_by_time(type='r_wrist', s_time=start_time, e_time=end_time)
+            l_ankle_start_index, l_ankle_end_index = self.find_index_by_time(type='l_ankle', s_time=target_start_time, e_time=target_end_time)
+            r_ankle_start_index, r_ankle_end_index = self.find_index_by_time(type='r_ankle', s_time=target_start_time, e_time=target_end_time)
+            l_wrist_start_index, l_wrist_end_index = self.find_index_by_time(type='l_wrist', s_time=target_start_time, e_time=target_end_time)
+            r_wrist_start_index, r_wrist_end_index = self.find_index_by_time(type='r_wrist', s_time=target_start_time, e_time=target_end_time)
 
             l_ankle_end_index = l_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
             r_ankle_end_index = r_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
             l_wrist_end_index = l_wrist_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
             r_wrist_end_index = r_wrist_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
 
-            l_ankle_swing_index, _ = self.find_index_by_time(type='l_ankle', s_time=self.swing_t, e_time=end_time)
+            l_ankle_swing_index, _ = self.find_index_by_time(type='l_ankle', s_time=self.swing_t, e_time=target_end_time)
             l_ankle_swing_index = l_ankle_swing_index - l_ankle_start_index     
 
             r_ankle_swing_start_index, r_ankle_swing_end_index = self.find_index_by_time(type='r_ankle', s_time=self.r_swing_start_t, e_time=self.r_swing_end_t)
@@ -304,11 +306,11 @@ class Subject():
                 r_wrist_z = np.append(r_wrist_z, 0)
                 r_wrist_svm = np.append(r_wrist_svm, 0)
     
-            while (len(l_pp_data)<125):
-                l_pp_data = np.append(l_pp_data, 0)
+            while (len(target_pp_data)<125):
+                target_pp_data = np.append(target_pp_data, 0)
 
-            while (len(r_pp_data)<125):
-                r_pp_data = np.append(r_pp_data, 0)
+            while (len(oppo_pp_data)<125):
+                oppo_pp_data = np.append(oppo_pp_data, 0)
 
             total_data.append(walking_speed)
             total_data.append(stride_length)
@@ -317,8 +319,8 @@ class Subject():
 
             total_data = np.concatenate((total_data, gait_features), axis=0)
 
-            total_data = np.concatenate((total_data, l_pp_data), axis=0)
-            total_data = np.concatenate((total_data, r_pp_data), axis=0)
+            total_data = np.concatenate((total_data, target_pp_data), axis=0)
+            total_data = np.concatenate((total_data, oppo_pp_data), axis=0)
             
             total_data = np.concatenate((total_data, l_db_y), axis=0)
 
@@ -350,6 +352,7 @@ class Subject():
         elif type == 'l_wrist': target=self.l_wrist_data
         elif type == 'r_wrist': target=self.r_wrist_data
         elif type == 'r_pp': target=self.r_plantar_pressure
+        elif type == 'l_pp': target=self.l_plantar_pressure
 
         s_min = None
         s_min_index = None
