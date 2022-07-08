@@ -228,7 +228,6 @@ class Subject():
             oppo_type = "l_pp"
 
         for info in target_info:
-            print(info)
             total_data = []
             walking_speed = None
             target_start_idx = int(info[0])
@@ -364,7 +363,9 @@ class Subject():
         e_min_index = None
 
         for i in range(len(target)):
-            time = target[i][0]
+            time = str(target[i][0])
+            print(time)
+
             if type == 'r_pp' or type == 'l_pp':
                 time = time.replace(" ", "")
                 time = "1"+time
@@ -387,7 +388,7 @@ class Subject():
 
             elif s_sub<s_min:
                 s_min = s_sub
-                s_min_index = i
+                s_min_index = i 
 
             elif e_sub<e_min:
                 e_min = e_sub
