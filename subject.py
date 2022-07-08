@@ -229,19 +229,21 @@ class Subject():
         for info in target_info:
             total_data = []
             walking_speed = None
-            stride_length = info[2]
-            r_step_length = info[3]
-            l_step_length = info[4]
+            target_start_idx = int(info[0])
+            target_end_idx = int(info[1])
+            stride_length = int(info[2])
+            r_step_length = int(info[3])
+            l_step_length = int(info[4])
 
-            target_start_time = self.change_str_to_time(target_pp[info[0]][0])
-            target_end_time = self.change_str_to_time(target_pp[info[1]][0])
+            target_start_time = self.change_str_to_time(target_pp[target_start_idx][0])
+            target_end_time = self.change_str_to_time(target_pp[target_end_idx][0])
             
             oppo_pp_start_idx, oppo_pp_end_idx = self.find_index_by_time(type=oppo_type, s_time=target_start_time, e_time=target_end_time)
 
-            target_pp_data = target_pp[info[0]:info[1]][:,1]
+            target_pp_data = target_pp[target_start_idx:target_end_idx][:,1]
             oppo_pp_data = opposite_pp[oppo_pp_start_idx:oppo_pp_end_idx][:,1]
 
-            gait_features = self.extract_gait_features(target_pp[info[0]:info[1]], opposite_pp[oppo_pp_start_idx:oppo_pp_end_idx])
+            gait_features = self.extract_gait_features(target_pp[target_start_idx:target_end_idx], opposite_pp[oppo_pp_start_idx:oppo_pp_end_idx])
 
             walking_speed = stride_length/(gait_features[0]/1000.0)
 
@@ -251,10 +253,10 @@ class Subject():
             l_wrist_start_index, l_wrist_end_index = self.find_index_by_time(type='l_wrist', s_time=target_start_time, e_time=target_end_time)
             r_wrist_start_index, r_wrist_end_index = self.find_index_by_time(type='r_wrist', s_time=target_start_time, e_time=target_end_time)
 
-            l_ankle_end_index = l_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
-            r_ankle_end_index = r_ankle_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
-            l_wrist_end_index = l_wrist_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
-            r_wrist_end_index = r_wrist_start_index + (int(info[1]/10 * 4) - int(info[0]/10 * 4))
+            l_ankle_end_index = l_ankle_start_index + (int(target_end_idx/10 * 4) - int(target_start_idx/10 * 4))
+            r_ankle_end_index = r_ankle_start_index + (int(target_end_idx/10 * 4) - int(target_start_idx/10 * 4))
+            l_wrist_end_index = l_wrist_start_index + (int(target_end_idx/10 * 4) - int(target_start_idx/10 * 4))
+            r_wrist_end_index = r_wrist_start_index + (int(target_end_idx/10 * 4) - int(target_start_idx/10 * 4))
 
             l_ankle_swing_index, _ = self.find_index_by_time(type='l_ankle', s_time=self.swing_t, e_time=target_end_time)
             l_ankle_swing_index = l_ankle_swing_index - l_ankle_start_index     
