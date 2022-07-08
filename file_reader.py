@@ -49,5 +49,4 @@ if __name__ == '__main__':
     subject_list = read_files()
     
     for subject in subject_list:
-        if subject.name == "최진성":
-            subject.find_stride_split_index(type="right")
+        
