@@ -13,7 +13,8 @@ class Subject():
         self.r_wrist_data = None
         self.l_ankle_data = None
         self.r_ankle_data = None
-        self.stride_info = None
+        self.l_stride_info = None
+        self.r_stride_info = None
         self.l_plantar_pressure = None
         self.r_plantar_pressure = None
         
@@ -34,7 +35,7 @@ class Subject():
             self.r_plantar_pressure = data.to_numpy()
 
     def set_stride_info(self, data):
-        self.stride_info = data
+        self.l_stride_info = data
 
     def convert_timedelata_to_milisec(self, delta):
         return (delta.microseconds/1000) + (delta.seconds*1000)
@@ -208,12 +209,14 @@ class Subject():
 
         return rtn_svm
 
-    def save_as_one_stride(self):
+    def save_as_one_stride(self, type="left"):
         os.makedirs("stride_lab_data/processed_data/"+self.name, exist_ok=True)
 
         file = open("stride_lab_data/processed_data/"+self.name+"/processed_data.csv", 'a')
 
-        for info in self.stride_info:
+        if type == "left" : target = self.l_stride_info
+
+        for info in self.l_stride_info:
             total_data = []
             walking_speed = None
             stride_length = info[2]
