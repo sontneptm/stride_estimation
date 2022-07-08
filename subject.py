@@ -86,6 +86,7 @@ class Subject():
     def find_r_swing_index(self, pp_data):
         swing_start = -1
         swing_end = -1
+
         for i in range(len(pp_data)):
             data = pp_data[i]
             
@@ -227,6 +228,7 @@ class Subject():
             oppo_type = "l_pp"
 
         for info in target_info:
+            print(info)
             total_data = []
             walking_speed = None
             target_start_idx = int(info[0])
@@ -363,7 +365,7 @@ class Subject():
 
         for i in range(len(target)):
             time = target[i][0]
-            if type=='r_pp':
+            if type == 'r_pp' or type == 'l_pp':
                 time = time.replace(" ", "")
                 time = "1"+time
                 try:
