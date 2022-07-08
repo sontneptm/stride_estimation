@@ -50,5 +50,5 @@ if __name__ == '__main__':
     subject_list = read_files()
     
     for subject in subject_list:
-        if (subject.name=="민세동"):
-            subject.save_as_one_stride(type="right")
+        subject.save_as_one_stride(type="left")
+        subject.save_as_one_stride(type="right")

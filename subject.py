@@ -364,7 +364,6 @@ class Subject():
 
         for i in range(len(target)):
             time = str(target[i][0])
-            print(time)
 
             if type == 'r_pp' or type == 'l_pp':
                 time = time.replace(" ", "")
