@@ -34,8 +34,9 @@ class Subject():
         elif pp_type== "r_pp":
             self.r_plantar_pressure = data.to_numpy()
 
-    def set_stride_info(self, data):
-        self.l_stride_info = data
+    def set_stride_info(self, l_data, r_data):
+        self.l_stride_info = l_data
+        self.r_stride_info = r_data
 
     def convert_timedelata_to_milisec(self, delta):
         return (delta.microseconds/1000) + (delta.seconds*1000)
@@ -214,24 +215,31 @@ class Subject():
 
         file = open("stride_lab_data/processed_data/"+self.name+"/processed_data.csv", 'a')
 
-        if type == "left" : target = self.l_stride_info
+        target_info = None
+        target_pp = None
 
-        for info in self.l_stride_info:
+        if type == "left" : 
+            target_info = self.l_stride_info
+            target_pp = self.l_plantar_pressure
+            opposite_pp = self.r_plantar_pressure
+        elif type == "right" : target_info = self.r_stride_info
+
+        for info in target_info:
             total_data = []
             walking_speed = None
             stride_length = info[2]
             r_step_length = info[3]
             l_step_length = info[4]
 
-            start_time = self.change_str_to_time(self.l_plantar_pressure[info[0]][0])
-            end_time = self.change_str_to_time(self.l_plantar_pressure[info[1]][0])
+            start_time = self.change_str_to_time(target_pp[info[0]][0])
+            end_time = self.change_str_to_time(target_pp[info[1]][0])
             
             r_pp_start_index, r_pp_end_index = self.find_index_by_time(type='r_pp', s_time=start_time, e_time=end_time)
 
-            l_pp_data = self.l_plantar_pressure[info[0]:info[1]][:,1]
-            r_pp_data = self.r_plantar_pressure[r_pp_start_index:r_pp_end_index][:,1]
+            l_pp_data = target_pp[info[0]:info[1]][:,1]
+            r_pp_data = opposite_pp[r_pp_start_index:r_pp_end_index][:,1]
 
-            gait_features = self.extract_gait_features(self.l_plantar_pressure[info[0]:info[1]], self.r_plantar_pressure[r_pp_start_index:r_pp_end_index])
+            gait_features = self.extract_gait_features(target_pp[info[0]:info[1]], opposite_pp[r_pp_start_index:r_pp_end_index])
 
             walking_speed = stride_length/(gait_features[0]/1000.0)
 

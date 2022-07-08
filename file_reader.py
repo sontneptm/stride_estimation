@@ -26,8 +26,9 @@ def read_files():
 
         stride_path = data_folder_str_list[1]
         try:
-            stride_data = pd.read_csv(stride_path+"/분할인덱스(왼발).csv")
-            subject.set_stride_info(stride_data.to_numpy())
+            l_stride_data = pd.read_csv(stride_path+"/분할인덱스(왼발).csv")
+            r_stride_data = pd.read_csv(stride_path+"/분할인덱스(오른발).csv")
+            subject.set_stride_info(l_stride_data.to_numpy(), r_stride_data.to_numpy())
         except:
             print("no split index found")
 
