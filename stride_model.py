@@ -44,18 +44,18 @@ def load_data(mode="loso"):
             if i<div:
                 for d in data:
                     train_y.append(d[0])
-                    train_x.append(d[3:])
+                    train_x.append(d[4:])
             elif i>=div:
                 for d in data:
                     test_y.append(d[0])
-                    test_x.append(d[3:])
+                    test_x.append(d[4:])
 
     elif mode=="shuffle":
         for i in range(len(data_list)):
             data = data_list[i]
 
             for d in data:
-                y_data.append(d[:1])
+                y_data.append(d[0])
                 x_data.append(d[4:])
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
@@ -118,9 +118,11 @@ if __name__ == "__main__":
     predict_y = step_model.predict(test_x)
 
     test_y = test_y.squeeze()
+
     predict_y = predict_y.squeeze()
 
     print("======= report ==========")
+    print(test_y)
 
     print("MAE: ",mean_absolute_error(y_true=test_y, y_pred=predict_y))
     print("=========================")
