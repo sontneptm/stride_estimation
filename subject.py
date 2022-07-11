@@ -70,8 +70,10 @@ class Subject():
             if data <= 90:
                 zero_point = i
                 break
-
-        return [peaks[0][0], peaks[0][1], zero_point]
+        try:
+            return [peaks[0][0], peaks[0][1], zero_point]
+        except:
+            return None
 
     def change_str_to_time(self, time_str:str):
         rtn_time = time_str.replace(" ", "")
@@ -111,6 +113,7 @@ class Subject():
         r_swing_start_index, r_swing_end_index = self.find_r_swing_index(r_pp_data)
 
         peaks_index = self.find_peaks_index(l_pp_data)
+        if peaks_index == None : raise Exception
         hs_index = peaks_index[0]
         to_index = peaks_index[1]
         swing_index = peaks_index[2]
@@ -244,7 +247,10 @@ class Subject():
             target_pp_data = target_pp[target_start_idx:target_end_idx][:,1]
             oppo_pp_data = opposite_pp[oppo_pp_start_idx:oppo_pp_end_idx][:,1]
 
-            gait_features = self.extract_gait_features(target_pp[target_start_idx:target_end_idx], opposite_pp[oppo_pp_start_idx:oppo_pp_end_idx])
+            try:
+                gait_features = self.extract_gait_features(target_pp[target_start_idx:target_end_idx], opposite_pp[oppo_pp_start_idx:oppo_pp_end_idx])
+            except:
+                continue
 
             walking_speed = stride_length/(gait_features[0]/1000.0)
 

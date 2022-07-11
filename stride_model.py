@@ -55,8 +55,8 @@ def load_data(mode="loso"):
             data = data_list[i]
 
             for d in data:
-                y_data.append(d[0])
-                x_data.append(d[3:])
+                y_data.append(d[:1])
+                x_data.append(d[4:])
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
     INPUT_SIZE = len(train_x[0])
     EPOCH = 2000
-    BATCH_SIZE = 64
+    BATCH_SIZE = 32
     LR = 1.46e-4
 
     train_x = train_x.reshape(-1,INPUT_SIZE,1)
@@ -116,6 +116,9 @@ if __name__ == "__main__":
     step_model.fit(train_x, train_y, batch_size=BATCH_SIZE, epochs=EPOCH, shuffle=True, validation_split=0.1)
 
     predict_y = step_model.predict(test_x)
+
+    test_y = test_y.squeeze()
+    predict_y = predict_y.squeeze()
 
     print("======= report ==========")
 
