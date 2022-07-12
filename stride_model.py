@@ -55,7 +55,7 @@ def load_data(mode="loso"):
             data = data_list[i]
 
             for d in data:
-                y_data.append(d[0])
+                y_data.append(d[:2])
                 x_data.append(d[4:])
 
         train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
@@ -85,7 +85,7 @@ def build_conv1_model(LR, INPUT_SIZE):
     model.add(BN())
     model.add(Dense(4096, activation='swish'))
     model.add(BN())
-    model.add(Dense(1, activation=None))
+    model.add(Dense(2, activation=None))
     model.compile(optimizer=Adam(learning_rate=LR), loss='mse')
 
     model.summary()
@@ -123,6 +123,7 @@ if __name__ == "__main__":
 
     print("======= report ==========")
     print(test_y)
+    print(predict_y)
 
     print("MAE: ",mean_absolute_error(y_true=test_y, y_pred=predict_y))
     print("=========================")
