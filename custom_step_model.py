@@ -262,7 +262,7 @@ class StepModel():
                 data_list = np.concatenate((data_list,data), axis=0)
 
         if mode == "random":
-            x_data = data_list[:,4:]
+            x_data = data_list[:,0:]
             y_data = data_list[:,:4] # walking_speed, Stride, r_step, l_step
             train_x, test_x, train_y, test_y =  train_test_split(x_data, y_data, test_size=0.2, random_state=42)
         elif mode == "loso":
@@ -327,7 +327,7 @@ class StepModel():
         model.add(BN())
         model.add(Dense(units=4096, activation='swish'))
         model.add(BN())
-        model.add(Dense(4, activation=None))
+        model.add(Dense(1, activation=None))
         model.summary()
 
         return model
@@ -359,21 +359,21 @@ class StepModel():
                 grads = step_tape.gradient(step_loss_value, self.step_model.trainable_variables)
                 self.fast_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
-                with tf.GradientTape() as real_stride_tape:
-                    logits = self.step_model(x_batch_train, training=True)
-                    step_loss_value = self.step_loss(logits[:,1], logits[:,2]+logits[:,3])
-                    # print("step 2", logits)
+                # with tf.GradientTape() as real_stride_tape:
+                #     logits = self.step_model(x_batch_train, training=True)
+                #     step_loss_value = self.step_loss(logits[:,1], logits[:,2]+logits[:,3])
+                #     # print("step 2", logits)
 
-                grads = real_stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
-                self.slow_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+                # grads = real_stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                # self.slow_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
 
-                with tf.GradientTape() as stride_tape:
-                    logits = self.step_model(x_batch_train, training=True)
-                    step_loss_value = self.step_loss(y_batch_train[:,1], logits[:,2]+logits[:,3])
-                    # print("step 3", logits)
+                # with tf.GradientTape() as stride_tape:
+                #     logits = self.step_model(x_batch_train, training=True)
+                #     step_loss_value = self.step_loss(y_batch_train[:,1], logits[:,2]+logits[:,3])
+                #     # print("step 3", logits)
                     
-                grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
-                self.slow_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
+                # grads = stride_tape.gradient(step_loss_value, self.step_model.trainable_variables)
+                # self.slow_optimizer.apply_gradients(zip(grads, self.step_model.trainable_variables))
                 
             print("train loss : %.4f" % float(step_loss_value), end='\t')
 
@@ -416,8 +416,8 @@ class StepModel():
             y_true = self.test_y[:,3]
             y_pred = predict[:,3]
 
-        for i in range(len(self.test_y)):
-            print("real : ", y_true[i], " predict : " , y_pred[i])
+        # for i in range(len(self.test_y)):
+        #     print("real : ", y_true[i], " predict : " , y_pred[i])
 
         print("======= ",mode ," report ==========")
         print("MAE: ",mean_absolute_error(y_true=y_true, y_pred=y_pred))
@@ -437,7 +437,7 @@ if __name__ == '__main__':
     model = StepModel(load_mode="random", target="whole",loso_sub_name="정승민")
     # model.tune_model()
     model.train()
-    model.test(mode="walking_speed")
-    model.test(mode="stride")
-    model.test(mode="r_step")
-    model.test(mode="l_step")
+    # model.test(mode="walking_speed")
+    # model.test(mode="stride")
+    # model.test(mode="r_step")
+    # model.test(mode="l_step")

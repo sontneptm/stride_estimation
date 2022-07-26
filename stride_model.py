@@ -102,8 +102,8 @@ if __name__ == "__main__":
     test_x = scaler.transform(test_x)
 
     INPUT_SIZE = len(train_x[0])
-    EPOCH = 2000
-    BATCH_SIZE = 32
+    EPOCH = 1000
+    BATCH_SIZE = 128
     LR = 1.46e-4
 
     train_x = train_x.reshape(-1,INPUT_SIZE,1)
